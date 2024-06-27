@@ -6,11 +6,19 @@ use crate::lexer::TokenType;
 
 pub struct Parser {
     tokens: Vec<Token>,
-    ast: Vec<String>,
+    ast: Vec<Ast>,
     current: usize,
 }
 
 impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Parser {
+        Parser {
+            tokens,
+            ast: vec![],
+            current: 0,
+        }
+    }
+
     fn peek(&self) -> Option<Token> {
         if self.current >= self.tokens.len() {
             return None;
@@ -25,15 +33,15 @@ impl Parser {
         Some(self.tokens[self.current]._type)
     }
 
-    pub fn parse(&self) -> Vec<String> {
+    pub fn parse(&mut self) -> Vec<Ast> {
         while let Some(nextType) = self.peekType() {
             // If we reach the end of the file, break
             if matches!(nextType, TokenType::EOF) {
                 break;
             }
 
-            // todo
-            continue;
+            let stmt = self.stmt();
+            self.ast.push(stmt);
         }
 
         self.ast.clone()
@@ -66,6 +74,7 @@ impl Parser {
                 self.eat(TokenType::RightBracket);
                 return Ast::Array(Array::from(items));
             }
+            TokenType::Identifier => return Ast::Var(token.value.clone()),
             _ => {
                 panic!("Unexpected token: {:?}", token);
             }
@@ -74,6 +83,11 @@ impl Parser {
 
     pub fn expr(&mut self) -> Ast {
         let left = self.simple();
+        if self.peekType().unwrap().isOperator() {
+            let op = self.eat(self.peekType().unwrap())._type;
+            let right = self.expr();
+            return Ast::Binary(Box::new(left), op, Box::new(right));
+        }
         left
     }
 

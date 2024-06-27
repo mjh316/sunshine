@@ -1,5 +1,6 @@
-use crate::lexer::TokenContentType;
+use crate::lexer::{TokenContentType, TokenType};
 
+#[derive(Debug, Clone)]
 pub struct Literal {
     content: TokenContentType,
 }
@@ -10,6 +11,7 @@ impl Literal {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Array {
     // TODO: fix this vec type lmao
     content: Vec<Ast>,
@@ -21,7 +23,24 @@ impl Array {
     }
 }
 
+// TODO: lowkey should probably rename this to AstNode
+#[derive(Debug, Clone)]
 pub enum Ast {
     Literal(Literal),
     Array(Array),
+    Var(String),
+    Binary(Box<Ast>, TokenType, Box<Ast>),
+}
+
+impl From<Ast> for String {
+    fn from(ast: Ast) -> String {
+        match ast {
+            Ast::Literal(literal) => format!("{:?}", literal.content),
+            Ast::Array(array) => format!("{:?}", array.content),
+            Ast::Var(var) => format!("{:?}", var),
+            Ast::Binary(left, op, right) => {
+                format!("({:?} {:?} {:?})", left, op, right)
+            }
+        }
+    }
 }

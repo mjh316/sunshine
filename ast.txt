@@ -1,0 +1,3 @@
+[
+    "(Literal(Literal { content: Number(1.0) }) Plus Binary(Literal(Literal { content: Number(1.0) }), Equiv, Var(\"true\")))",
+]

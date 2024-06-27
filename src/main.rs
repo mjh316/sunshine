@@ -31,15 +31,33 @@ fn main() {
             println!("Reading file: {}", location);
             let program = read_file(location);
             let mut lexer = lexer::Lexer::new(program);
-            lexer.scan_tokens();
+            let tokens = lexer.scan_tokens();
 
             if debug {
                 write_file(
                     "tokens.txt",
                     format!(
                         "{:#?}",
-                        lexer
-                            .tokens
+                        tokens
+                            .clone()
+                            .into_iter()
+                            .map(|x| String::from(x))
+                            .collect::<Vec<String>>()
+                    )
+                    .as_str(),
+                );
+            }
+
+            let mut parser = parser::Parser::new(tokens);
+
+            let ast = parser.parse();
+
+            if debug {
+                write_file(
+                    "ast.txt",
+                    format!(
+                        "{:#?}",
+                        ast.clone()
                             .into_iter()
                             .map(|x| String::from(x))
                             .collect::<Vec<String>>()

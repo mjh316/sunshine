@@ -39,6 +39,26 @@ pub enum TokenType {
     Boolean,
 }
 
+impl TokenType {
+    pub fn isOperator(&self) -> bool {
+        matches!(
+            self,
+            TokenType::Or
+                | TokenType::And
+                | TokenType::Equiv
+                | TokenType::NotEquiv
+                | TokenType::Gt
+                | TokenType::Gte
+                | TokenType::Lt
+                | TokenType::Lte
+                | TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Asterisk
+                | TokenType::Slash
+        )
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum TokenContentType {
     String(String),
@@ -76,7 +96,7 @@ impl From<Token> for String {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub _type: TokenType,
-    value: String,
+    pub value: String,
     pub content: TokenContentType,
     line: usize,
     column: usize,
