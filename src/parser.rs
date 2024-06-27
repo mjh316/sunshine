@@ -282,6 +282,8 @@ impl Parser {
         return Ast::While(Box::new(condition), body);
     }
 
+    // todo: you could totally avoid the nonsense for the conditionalStmt
+    // if you just used separate if statements for the otherwise and elif
     fn conditionalStmt<'a>(&mut self, keyword: String) -> Ast {
         self.eatKeywordOwned(keyword.clone());
 
