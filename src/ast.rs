@@ -30,7 +30,23 @@ pub enum Ast {
     Array(Array),
     Var(String),
     Binary(Box<Ast>, TokenType, Box<Ast>),
-    Func(String, Vec<String>, Vec<Ast>), // name, params, body
+    /**
+     * name, params, body
+     */
+    Func(String, Vec<String>, Vec<Ast>),
+    Return(Box<Ast>),
+    /**
+     * id, range, body
+     */
+    For(String, Vec<Ast>, Vec<Ast>),
+    /**
+     * condition, body
+     */
+    While(Box<Ast>, Vec<Ast>),
+    /**
+     * condition, if body, else body
+     */
+    Conditional(Box<Ast>, Vec<Ast>, Vec<Ast>),
 }
 
 impl From<Ast> for String {
@@ -44,6 +60,16 @@ impl From<Ast> for String {
             }
             Ast::Func(name, params, body) => {
                 format!("(fn {:?} {:?} {:?})", name, params, body)
+            }
+            Ast::Return(expr) => format!("(return {:?})", expr),
+            Ast::For(id, range, body) => {
+                format!("(for {:?} {:?} {:?})", id, range, body)
+            }
+            Ast::While(condition, body) => {
+                format!("(while {:?} {:?})", condition, body)
+            }
+            Ast::Conditional(condition, if_body, else_body) => {
+                format!("(if {:?} {:?} {:?})", condition, if_body, else_body)
             }
         }
     }
