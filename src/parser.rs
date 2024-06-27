@@ -86,6 +86,19 @@ impl Parser {
         if self.peekType().unwrap().isOperator() {
             let op = self.eat(self.peekType().unwrap())._type;
             let right = self.expr();
+            match right.clone() {
+                Ast::Binary(rightLeft, rightOp, rightRight) => {
+                    if op.precedence() > rightOp.precedence() {
+                        return Ast::Binary(
+                            Box::new(Ast::Binary(Box::new(left), op, rightLeft)),
+                            rightOp,
+                            rightRight,
+                        );
+                    }
+                    return Ast::Binary(Box::new(left), op, Box::new(right));
+                }
+                _ => {}
+            }
             return Ast::Binary(Box::new(left), op, Box::new(right));
         }
         left

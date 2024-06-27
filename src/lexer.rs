@@ -57,6 +57,23 @@ impl TokenType {
                 | TokenType::Slash
         )
     }
+
+    // order of operations
+    pub fn precedence(&self) -> i32 {
+        match self {
+            TokenType::Lt
+            | TokenType::Lte
+            | TokenType::Gt
+            | TokenType::Gte
+            | TokenType::Equiv
+            | TokenType::NotEquiv
+            | TokenType::And
+            | TokenType::Or => 0,
+            TokenType::Plus | TokenType::Minus => 1,
+            TokenType::Asterisk | TokenType::Slash => 2,
+            _ => -1,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
