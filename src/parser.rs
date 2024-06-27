@@ -68,7 +68,7 @@ impl Parser {
             TokenType::LeftBracket => {
                 let mut items = Vec::new();
                 let nextType = self.peekType();
-                if nextType.is_some_and(|x| matches!(x, TokenType::RightBracket)) {
+                if !nextType.is_some_and(|x| matches!(x, TokenType::RightBracket)) {
                     items = self.exprList();
                 }
                 self.eat(TokenType::RightBracket);
@@ -93,6 +93,7 @@ impl Parser {
 
     pub fn exprList(&mut self) -> Vec<Ast> {
         let mut exprs = vec![];
+        exprs.push(self.expr());
         loop {
             let next = self.peek();
             match next {

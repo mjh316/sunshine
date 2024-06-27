@@ -1,3 +1,4 @@
 [
-    "(Literal(Literal { content: Number(1.0) }) Plus Binary(Literal(Literal { content: Number(1.0) }), Equiv, Var(\"true\")))",
+    "[Binary(Literal(Literal { content: Number(4.0) }), Plus, Literal(Literal { content: Number(21.0) }))]",
+    "(Literal(Literal { content: Number(2006.0) }) Slash Binary(Literal(Literal { content: Number(4012.0) }), Plus, Literal(Literal { content: Number(2.0) })))",
 ]
