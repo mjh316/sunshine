@@ -30,6 +30,7 @@ pub enum Ast {
     Array(Array),
     Var(String),
     Binary(Box<Ast>, TokenType, Box<Ast>),
+    Func(String, Vec<String>, Vec<Ast>), // name, params, body
 }
 
 impl From<Ast> for String {
@@ -40,6 +41,9 @@ impl From<Ast> for String {
             Ast::Var(var) => format!("{:?}", var),
             Ast::Binary(left, op, right) => {
                 format!("({:?} {:?} {:?})", left, op, right)
+            }
+            Ast::Func(name, params, body) => {
+                format!("(fn {:?} {:?} {:?})", name, params, body)
             }
         }
     }

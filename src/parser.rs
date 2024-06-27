@@ -59,6 +59,29 @@ impl Parser {
         }
     }
 
+    fn identifierList(&mut self) -> Vec<String> {
+        let mut identifiers = vec![];
+        identifiers.push(self.eat(TokenType::Identifier).value);
+        loop {
+            let next = self.peek();
+            match next {
+                Some(token) => match token._type {
+                    TokenType::Comma => {
+                        self.eat(TokenType::Comma);
+                        identifiers.push(self.eat(TokenType::Identifier).value);
+                    }
+                    _ => {
+                        break;
+                    }
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+        identifiers
+    }
+
     pub fn simple(&mut self) -> Ast {
         let token = self.eat(self.peekType().unwrap());
         match token._type {
@@ -75,6 +98,11 @@ impl Parser {
                 return Ast::Array(Array::from(items));
             }
             TokenType::Identifier => return Ast::Var(token.value.clone()),
+            TokenType::LeftParen => {
+                let expr = self.expr();
+                self.eat(TokenType::RightParen);
+                return expr;
+            }
             _ => {
                 panic!("Unexpected token: {:?}", token);
             }
@@ -127,10 +155,71 @@ impl Parser {
         exprs
     }
 
+    fn peekKeyword(&self, keyword: &'static str) -> Option<Token> {
+        let nextType = self.peekType().unwrap();
+        match nextType {
+            TokenType::Keyword => {
+                if self.peek().unwrap().value == keyword {
+                    return Some(self.peek().unwrap());
+                }
+            }
+            _ => {}
+        }
+        None
+    }
+
+    fn eatKeyword(&mut self, keyword: &'static str) -> Token {
+        let next = self.peekKeyword(keyword);
+        match next {
+            Some(token) => {
+                if token.value != keyword {
+                    panic!("Expected keyword {:?}, got {:?}", keyword, token.value);
+                }
+                self.eat(TokenType::Keyword)
+            }
+            None => {
+                panic!("Expected keyword {:?}, got None", keyword);
+            }
+        }
+    }
+
+    fn funcStmt(&mut self) -> Ast {
+        self.eatKeyword("sketch");
+        let name = self.eat(TokenType::Identifier).value;
+
+        let mut params = vec![];
+        if self
+            .peekKeyword("needs")
+            .is_some_and(|x| x.value == "needs")
+        {
+            self.eatKeyword("needs");
+            self.eat(TokenType::LeftParen);
+            params = self.identifierList();
+            self.eat(TokenType::RightParen);
+        }
+
+        self.eat(TokenType::LeftBrace);
+        let mut body = vec![];
+        while !matches!(self.peekType().unwrap(), TokenType::RightBrace) {
+            body.push(self.stmt());
+        }
+        self.eat(TokenType::RightBrace);
+
+        Ast::Func(name, params, body)
+    }
+
     pub fn stmt(&mut self) -> Ast {
         let next = self.peek();
         match next {
             Some(token) => match token._type {
+                TokenType::Keyword => match token.value.as_str() {
+                    "sketch" => {
+                        return self.funcStmt();
+                    }
+                    _ => {
+                        panic!("Unexpected keyword: {:?}", token.value);
+                    }
+                },
                 _ => {
                     return self.expr();
                     // panic!("Unexpected token: {:?}", token);

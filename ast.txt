@@ -1,4 +1,3 @@
 [
-    "[Binary(Literal(Literal { content: Number(4.0) }), Plus, Literal(Literal { content: Number(21.0) }))]",
-    "(Binary(Literal(Literal { content: Number(2006.0) }), Slash, Literal(Literal { content: Number(4012.0) })) Plus Literal(Literal { content: Number(2.0) }))",
+    "(Binary(Literal(Literal { content: Number(15.0) }), Plus, Literal(Literal { content: Number(15.0) })) Slash Literal(Literal { content: Number(3.0) }))",
 ]

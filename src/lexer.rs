@@ -39,6 +39,12 @@ pub enum TokenType {
     Boolean,
 }
 
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", format!("{:?}", self).to_lowercase())
+    }
+}
+
 impl TokenType {
     pub fn isOperator(&self) -> bool {
         matches!(
