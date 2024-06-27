@@ -1,3 +1,5 @@
+mod lexer;
+
 use std::env;
 
 fn read_file(location: &str) -> String {
@@ -15,6 +17,7 @@ fn write_file(location: &str, data: &str) -> () {
 fn main() {
     let mut argv = env::args().collect::<Vec<String>>();
     let debug = argv.iter().any(|x| x == "--dbg");
+    println!("Debug: {}", debug);
     if debug {
         argv.retain(|x| x != "--dbg");
     }
@@ -25,7 +28,25 @@ fn main() {
         Some(location) => {
             println!("Reading file: {}", location);
             let program = read_file(location);
-            println!("{}", program);
+            let mut lexer = lexer::Lexer::new(program);
+            lexer.scan_tokens();
+
+            if debug {
+                write_file(
+                    "tokens.txt",
+                    format!(
+                        "{:?}",
+                        lexer
+                            .tokens
+                            .into_iter()
+                            .map(|x| String::from(x))
+                            .collect::<Vec<String>>()
+                            .join("\n")
+                    )
+                    .as_str(),
+                );
+            }
+            // println!("{}", program);
         }
         None => {
             // No file provided, go to REPL?
