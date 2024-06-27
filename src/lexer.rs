@@ -8,7 +8,7 @@ fn KEYWORDS() -> HashSet<&'static str> {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum TokenType {
+pub enum TokenType {
     LeftParen,
     RightParen,
     LeftBrace,
@@ -36,10 +36,11 @@ enum TokenType {
     Asterisk,
     Slash,
     EOF,
+    Boolean,
 }
 
 #[derive(Debug, Clone)]
-enum TokenContentType {
+pub enum TokenContentType {
     String(String),
     Number(f64),
     Boolean(bool),
@@ -74,9 +75,9 @@ impl From<Token> for String {
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    _type: TokenType,
+    pub _type: TokenType,
     value: String,
-    content: TokenContentType,
+    pub content: TokenContentType,
     line: usize,
     column: usize,
 }
