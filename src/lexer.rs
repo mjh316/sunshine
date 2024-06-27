@@ -66,7 +66,7 @@ impl Into<TokenContentType> for bool {
 impl From<Token> for String {
     fn from(token: Token) -> String {
         format!(
-            "Token {{ type: {:?}, value: {}, content: {:?}, line: {}, column: {} }}",
+            "Token {{ type: {:?},  value: {},  content: {:?}, line: {}, column: {} }}",
             token._type, token.value, token.content, token.line, token.column
         )
     }

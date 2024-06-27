@@ -35,13 +35,12 @@ fn main() {
                 write_file(
                     "tokens.txt",
                     format!(
-                        "{:?}",
+                        "{:#?}",
                         lexer
                             .tokens
                             .into_iter()
                             .map(|x| String::from(x))
                             .collect::<Vec<String>>()
-                            .join("\n")
                     )
                     .as_str(),
                 );
