@@ -1,0 +1,13 @@
+[
+    "Token { type: LeftBracket,  value: [,  content: String(\"[\"), line: 1, column: 2 }",
+    "Token { type: Number,  value: 4,  content: Number(4.0), line: 1, column: 3 }",
+    "Token { type: Plus,  value: +,  content: String(\"+\"), line: 1, column: 5 }",
+    "Token { type: Number,  value: 21,  content: Number(21.0), line: 1, column: 8 }",
+    "Token { type: RightBracket,  value: ],  content: String(\"]\"), line: 1, column: 9 }",
+    "Token { type: Number,  value: 2006,  content: Number(2006.0), line: 2, column: 4 }",
+    "Token { type: Slash,  value: /,  content: String(\"/\"), line: 2, column: 6 }",
+    "Token { type: Number,  value: 4012,  content: Number(4012.0), line: 2, column: 11 }",
+    "Token { type: Plus,  value: +,  content: String(\"+\"), line: 2, column: 13 }",
+    "Token { type: Number,  value: 2,  content: Number(2.0), line: 2, column: 15 }",
+    "Token { type: EOF,  value: ,  content: String(\"\"), line: 2, column: 15 }",
+]
