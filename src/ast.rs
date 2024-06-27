@@ -10,6 +10,18 @@ impl Literal {
     }
 }
 
+pub struct Array {
+    // TODO: fix this vec type lmao
+    content: Vec<Ast>,
+}
+
+impl Array {
+    pub fn from(content: Vec<Ast>) -> Array {
+        Array { content }
+    }
+}
+
 pub enum Ast {
     Literal(Literal),
+    Array(Array),
 }

@@ -1,3 +1,4 @@
+use crate::ast::Array;
 use crate::ast::Ast;
 use crate::ast::Literal;
 use crate::lexer::Token;
@@ -56,6 +57,15 @@ impl Parser {
             TokenType::String | TokenType::Number | TokenType::Boolean => {
                 return Ast::Literal(Literal::from(token.content.clone()));
             }
+            TokenType::LeftBracket => {
+                let mut items = Vec::new();
+                let nextType = self.peekType();
+                if nextType.is_some_and(|x| matches!(x, TokenType::RightBracket)) {
+                    items = self.exprList();
+                }
+                self.eat(TokenType::RightBracket);
+                return Ast::Array(Array::from(items));
+            }
             _ => {
                 panic!("Unexpected token: {:?}", token);
             }
@@ -65,6 +75,28 @@ impl Parser {
     pub fn expr(&mut self) -> Ast {
         let left = self.simple();
         left
+    }
+
+    pub fn exprList(&mut self) -> Vec<Ast> {
+        let mut exprs = vec![];
+        loop {
+            let next = self.peek();
+            match next {
+                Some(token) => match token._type {
+                    TokenType::Comma => {
+                        self.eat(TokenType::Comma);
+                        exprs.push(self.expr());
+                    }
+                    _ => {
+                        break;
+                    }
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+        exprs
     }
 
     pub fn stmt(&mut self) -> Ast {
