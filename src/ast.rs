@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Not};
 
 use crate::lexer::{TokenContentType, TokenType};
 
 #[derive(Debug, Clone)]
 pub struct Literal {
-    content: TokenContentType,
+    pub content: TokenContentType,
 }
 
 impl Literal {
@@ -16,7 +16,7 @@ impl Literal {
 #[derive(Debug, Clone)]
 pub struct Array {
     // TODO: fix this vec type lmao
-    content: Vec<Ast>,
+    pub content: Vec<Ast>,
 }
 
 impl Array {
@@ -59,6 +59,32 @@ pub enum Ast {
     Get(Box<Ast>, Box<Ast>, bool),
     PointGet(Box<Ast>, String),
     Unary(TokenType, Box<Ast>),
+}
+
+impl Clone for Ast {
+    fn clone(&self) -> Self {
+        match self {
+            Ast::Literal(lit) => Ast::Literal(lit.clone()),
+            Ast::Array(arr) => Ast::Array(arr.clone()),
+            Ast::Var(name, value) => Ast::Var(name.clone(), value.clone()),
+            Ast::Binary(left, op, right) => Ast::Binary(left.clone(), op.clone(), right.clone()),
+            Ast::Func(name, params, body) => Ast::Func(name.clone(), params.clone(), body.clone()),
+            Ast::Return(value) => Ast::Return(value.clone()),
+            Ast::For(id, range, body) => Ast::For(id.clone(), range.clone(), body.clone()),
+            Ast::While(cond, body) => Ast::While(cond.clone(), body.clone()),
+            Ast::Conditional(cond, if_body, else_body) => {
+                Ast::Conditional(cond.clone(), if_body.clone(), else_body.clone())
+            }
+            Ast::Set(obj, field, value) => Ast::Set(obj.clone(), field.clone(), value.clone()),
+            Ast::Struct(name, fields) => Ast::Struct(name.clone(), fields.clone()),
+            Ast::Instance(name, fields) => Ast::Instance(name.clone(), fields.clone()),
+            Ast::Call(callee, args) => Ast::Call(callee.clone(), args.clone()),
+            Ast::Get(obj, prop, is_bracket) => Ast::Get(obj.clone(), prop.clone(), *is_bracket),
+            Ast::PointGet(obj, field) => Ast::PointGet(obj.clone(), field.clone()),
+            Ast::Unary(op, expr) => Ast::Unary(op.clone(), expr.clone()),
+            Ast::Invoke(func) => Ast::Invoke(Box::new(func.clone())),
+        }
+    }
 }
 
 impl From<Ast> for String {
@@ -110,6 +136,22 @@ impl From<Ast> for String {
             Ast::Unary(op, expr) => {
                 format!("({:?} {:?})", op, expr)
             }
+        }
+    }
+}
+
+impl Not for Ast {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Boolean(b) => Ast::Literal(Literal {
+                    content: TokenContentType::Boolean(!b),
+                }),
+                _ => panic!("Expected boolean literal but got {:?}", literal.content),
+            },
+            _ => panic!("Expected boolean literal but got {:?}", self),
         }
     }
 }
