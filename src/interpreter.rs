@@ -20,7 +20,14 @@ impl Interpreter {
     }
 
     pub fn evaluate(value: Box<Ast>, scope: Rc<RefCell<HashMap<String, Ast>>>) -> Ast {
-        Ast::Literal(Literal::from(TokenContentType::String("".to_string())))
+        match *value {
+            Ast::Var(name, _) => {
+                return scope.borrow_mut().get(&name).unwrap().clone();
+            }
+            _ => {
+                panic!("Expected expression but got statement {:?}", value);
+            }
+        }
     }
 
     pub fn execute(
