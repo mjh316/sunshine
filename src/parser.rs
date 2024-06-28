@@ -49,14 +49,21 @@ impl Parser {
         self.ast.clone()
     }
 
-    pub fn eat(&mut self, tokenType: TokenType) -> Token {
+    pub fn eat(&mut self, token_type: TokenType) -> Token {
         match self.peekType() {
-            Some(tokenType) => {
+            Some(tokenType2) => {
+                if tokenType2.to_string() != token_type.to_string() {
+                    panic!(
+                        "Expected token type {:?}, got {:?}",
+                        token_type,
+                        self.peek().unwrap()
+                    );
+                }
                 self.current += 1;
                 return self.tokens[self.current - 1].clone();
             }
             None => {
-                panic!("Expected token type {:?}, got None", tokenType);
+                panic!("Expected token type {:?}, got None", token_type);
             }
         }
     }
@@ -102,6 +109,7 @@ impl Parser {
             TokenType::Identifier => return Ast::Var(token.value.clone(), None),
             TokenType::LeftParen => {
                 let expr = self.expr();
+                println!("RIGHTPAREN 1");
                 self.eat(TokenType::RightParen);
                 return expr;
             }
@@ -121,6 +129,7 @@ impl Parser {
                         }
                     }
 
+                    println!("RIGHTPAREN 2");
                     self.eat(TokenType::RightParen);
 
                     return Ast::Instance(id, members);
@@ -145,10 +154,21 @@ impl Parser {
                     let mut args = vec![];
                     if !matches!(self.peekType().unwrap(), TokenType::RightParen) {
                         args = self.exprList();
+                        println!("args: {:?}", args);
+                    } else {
+                        println!("no arguments to function call: {:?}", expr);
                     }
 
-                    self.eat(TokenType::RightParen);
+                    println!("RIGHTPAREN 3");
+                    println!(
+                        "eaten right parens in call: {:?}",
+                        self.eat(TokenType::RightParen)
+                    );
+                    println!("self.current in call: {:?}", self.current);
+                    // println!("eaten right parens in call: {:?}", expr);
                     expr = Ast::Call(Box::new(expr), args);
+
+                    println!("expr: {:?}", expr);
                 }
                 TokenType::LeftBracket => {
                     self.eat(TokenType::LeftBracket);
@@ -179,6 +199,7 @@ impl Parser {
 
     pub fn expr(&mut self) -> Ast {
         let left = self.unary();
+        println!("left: {:?}", left);
         if self.peekType().unwrap().isOperator() {
             let op = self.eat(self.peekType().unwrap())._type;
             let right = self.expr();
@@ -236,36 +257,8 @@ impl Parser {
         None
     }
 
-    fn peekKeywordOwned(&self, keyword: String) -> Option<Token> {
-        let nextType = self.peekType().unwrap();
-        match nextType {
-            TokenType::Keyword => {
-                if self.peek().unwrap().value == keyword {
-                    return Some(self.peek().unwrap());
-                }
-            }
-            _ => {}
-        }
-        None
-    }
-
     fn eatKeyword(&mut self, keyword: &'static str) -> Token {
         let next = self.peekKeyword(keyword);
-        match next {
-            Some(token) => {
-                if token.value != keyword {
-                    panic!("Expected keyword {:?}, got {:?}", keyword, token.value);
-                }
-                self.eat(TokenType::Keyword)
-            }
-            None => {
-                panic!("Expected keyword {:?}, got None", keyword);
-            }
-        }
-    }
-
-    fn eatKeywordOwned(&mut self, keyword: String) -> Token {
-        let next = self.peekKeywordOwned(keyword.clone());
         match next {
             Some(token) => {
                 if token.value != keyword {
@@ -291,6 +284,7 @@ impl Parser {
             self.eatKeyword("needs");
             self.eat(TokenType::LeftParen);
             params = self.identifierList();
+            println!("RIGHTPAREN 4");
             self.eat(TokenType::RightParen);
         }
 
@@ -320,6 +314,7 @@ impl Parser {
         if range.len() != 2 {
             panic!("Expected range to have 2 elements, got {:?}", range.len());
         }
+        println!("RIGHTPAREN 5");
         self.eat(TokenType::RightParen);
 
         self.eat(TokenType::LeftBrace);
@@ -337,6 +332,7 @@ impl Parser {
 
         self.eat(TokenType::LeftParen);
         let condition = self.expr();
+        println!("RIGHTPAREN 6");
         self.eat(TokenType::RightParen);
 
         self.eat(TokenType::LeftBrace);
@@ -351,29 +347,48 @@ impl Parser {
 
     // todo: you could totally avoid the nonsense for the conditionalStmt
     // if you just used separate if statements for the otherwise and elif
-    fn conditionalStmt<'a>(&mut self, keyword: String) -> Ast {
-        self.eatKeywordOwned(keyword.clone());
+    fn conditionalStmt(&mut self, keyword: &'static str) -> Ast {
+        self.eatKeyword(keyword);
 
         let mut condition = Ast::Literal(Literal::from(true.into()));
         if keyword != "else" {
             self.eat(TokenType::LeftParen);
             condition = self.expr();
+            println!("RIGHTPAREN 7");
+            println!("self.current in conditionalStmt: {:?}", self.current);
             self.eat(TokenType::RightParen);
         }
 
+        println!("self.current1 in conditionalStmt: {:?}", self.current);
         self.eat(TokenType::LeftBrace);
+        println!("self.current2 in conditionalStmt: {:?}", self.current);
         let mut body = vec![];
+        println!("starting conditional body: {:?}", body);
         while !matches!(self.peekType().unwrap(), TokenType::RightBrace) {
+            println!("peekType: {:?}", self.peekType().unwrap());
+            println!("self.current3 in conditionalStmt: {:?}", self.current);
             body.push(self.stmt());
+            println!("self.current4 in conditionalStmt: {:?}", self.current);
+            println!("conditional body: {:?}", body)
         }
-        self.eat(TokenType::RightBrace);
+        println!("end of conditional body: {:?}", body);
+        println!(
+            "eaten right brace in conditionalStmt: {:?}",
+            self.eat(TokenType::RightBrace)
+        );
 
         let mut otherwise = vec![];
-        while self.peekKeyword("else").is_some_and(|x| x.value == "else")
-            || self.peekKeyword("elif").is_some_and(|x| x.value == "elif")
-        {
-            let next = self.peek().unwrap();
-            otherwise.push(self.conditionalStmt(next.value.clone()));
+        loop {
+            let elseKeyword = self.peekKeyword("else");
+            let elifKeyword = self.peekKeyword("elif");
+
+            if elseKeyword.is_some() {
+                otherwise.push(self.conditionalStmt("else"));
+            } else if elifKeyword.is_some() {
+                otherwise.push(self.conditionalStmt("elif"));
+            } else {
+                break;
+            }
         }
 
         Ast::Conditional(Box::new(condition), body, otherwise)
@@ -410,6 +425,7 @@ impl Parser {
 
     pub fn stmt(&mut self) -> Ast {
         let next = self.peek();
+        println!("next token in stmt(): {:?}", next);
         match next {
             Some(token) => match token._type {
                 TokenType::Keyword => match token.value.as_str() {
@@ -426,7 +442,7 @@ impl Parser {
                         return self.whileStmt();
                     }
                     "if" => {
-                        return self.conditionalStmt("if".to_owned());
+                        return self.conditionalStmt("if");
                     }
                     "prepare" => {
                         return self.assignStmt();

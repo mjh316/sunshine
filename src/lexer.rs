@@ -295,23 +295,18 @@ impl Lexer {
                 self.column,
             )),
             '\'' | '"' => {
-                let mut value = String::from("");
-                let mut content = String::from("");
-                let mut char = self.advance();
-                while char != '\'' && char != '"' {
-                    value.push(char);
-                    content.push(char);
-                    char = self.advance();
-
-                    if char == '\0' {
-                        panic!("Unterminated string literal");
+                let mut string = String::new();
+                while self.peek() != char {
+                    string.push(self.advance());
+                    if self.isAtEnd() {
+                        panic!("Unterminated string");
                     }
                 }
-                self.advance(); // remove if string parsing sketch
+                self.advance();
                 self.tokens.push(Token::new(
                     TokenType::String,
-                    value,
-                    content.into(),
+                    string.clone(),
+                    string.into(),
                     self.line,
                     self.column,
                 ));
@@ -448,6 +443,7 @@ impl Lexer {
                         self.advance();
                         char = self.peek();
                     }
+
                     let _type = if KEYWORDS().contains(&identifier.as_str()) {
                         TokenType::Keyword
                     } else {
