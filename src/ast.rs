@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::lexer::{TokenContentType, TokenType};
 
 #[derive(Debug, Clone)]
@@ -28,7 +30,10 @@ impl Array {
 pub enum Ast {
     Literal(Literal),
     Array(Array),
-    Var(String),
+    /**
+     * name, value
+     */
+    Var(String, Option<Box<Ast>>),
     Binary(Box<Ast>, TokenType, Box<Ast>),
     /**
      * name, params, body
@@ -47,6 +52,13 @@ pub enum Ast {
      * condition, if body, else body
      */
     Conditional(Box<Ast>, Vec<Ast>, Vec<Ast>),
+    Set(String, String, Box<Ast>),
+    Struct(String, Vec<String>),
+    Instance(String, HashMap<String, Ast>),
+    Call(Box<Ast>, Vec<Ast>),
+    Get(Box<Ast>, Box<Ast>, bool),
+    PointGet(Box<Ast>, String),
+    Unary(TokenType, Box<Ast>),
 }
 
 impl From<Ast> for String {
@@ -54,7 +66,13 @@ impl From<Ast> for String {
         match ast {
             Ast::Literal(literal) => format!("{:?}", literal.content),
             Ast::Array(array) => format!("{:?}", array.content),
-            Ast::Var(var) => format!("{:?}", var),
+            Ast::Var(name, value) => {
+                if let Some(value) = value {
+                    format!("(var {:?} = {:?})", name, value)
+                } else {
+                    format!("(var {:?}) = None", name)
+                }
+            }
             Ast::Binary(left, op, right) => {
                 format!("({:?} {:?} {:?})", left, op, right)
             }
@@ -70,6 +88,27 @@ impl From<Ast> for String {
             }
             Ast::Conditional(condition, if_body, else_body) => {
                 format!("(if {:?} {:?} {:?})", condition, if_body, else_body)
+            }
+            Ast::Set(caller, property, value) => {
+                format!("(set {:?} {:?} {:?})", caller, property, value)
+            }
+            Ast::Struct(name, fields) => {
+                format!("(struct {:?} {:?})", name, fields)
+            }
+            Ast::Instance(name, fields) => {
+                format!("(instance {:?} {:?})", name, fields)
+            }
+            Ast::Call(caller, args) => {
+                format!("(call {:?} {:?})", caller, args)
+            }
+            Ast::Get(caller, property, is_method) => {
+                format!("(get {:?} {:?} {:?})", caller, property, is_method)
+            }
+            Ast::PointGet(caller, property) => {
+                format!("(point-get {:?} {:?})", caller, property)
+            }
+            Ast::Unary(op, expr) => {
+                format!("({:?} {:?})", op, expr)
             }
         }
     }

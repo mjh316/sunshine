@@ -4,6 +4,7 @@ use crate::ast::Literal;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -98,20 +99,86 @@ impl Parser {
                 self.eat(TokenType::RightBracket);
                 return Ast::Array(Array::from(items));
             }
-            TokenType::Identifier => return Ast::Var(token.value.clone()),
+            TokenType::Identifier => return Ast::Var(token.value.clone(), None),
             TokenType::LeftParen => {
                 let expr = self.expr();
                 self.eat(TokenType::RightParen);
                 return expr;
             }
+            TokenType::Keyword => match token.value.as_str() {
+                "prep" => {
+                    let id = self.eat(TokenType::Identifier).value.clone();
+
+                    self.eat(TokenType::LeftParen);
+
+                    let mut members: HashMap<String, Ast> = HashMap::new();
+                    while !matches!(self.peekType().unwrap(), TokenType::RightParen) {
+                        let member = self.eat(TokenType::Identifier).value.clone();
+                        self.eat(TokenType::Colon);
+                        members.insert(member, self.expr());
+                        if matches!(self.peekType().unwrap(), TokenType::Comma) {
+                            self.eat(TokenType::Comma);
+                        }
+                    }
+
+                    self.eat(TokenType::RightParen);
+
+                    return Ast::Instance(id, members);
+                }
+                _ => {
+                    panic!("Unexpected keyword: {:?}", token.value);
+                }
+            },
             _ => {
                 panic!("Unexpected token: {:?}", token);
             }
         }
     }
 
+    fn call(&mut self) -> Ast {
+        let mut expr = self.simple();
+        loop {
+            match self.peekType().unwrap() {
+                TokenType::LeftParen => {
+                    self.eat(TokenType::LeftParen);
+
+                    let mut args = vec![];
+                    if !matches!(self.peekType().unwrap(), TokenType::RightParen) {
+                        args = self.exprList();
+                    }
+
+                    self.eat(TokenType::RightParen);
+                    expr = Ast::Call(Box::new(expr), args);
+                }
+                TokenType::LeftBracket => {
+                    self.eat(TokenType::LeftBracket);
+                    let property = self.expr();
+                    self.eat(TokenType::RightBracket);
+                    expr = Ast::Get(Box::new(expr), Box::new(property), true);
+                }
+                TokenType::Period => {
+                    self.eat(TokenType::Period);
+                    let property = self.eat(TokenType::Identifier).value.clone();
+                    expr = Ast::PointGet(Box::new(expr), property);
+                }
+                _ => break,
+            }
+        }
+        expr
+    }
+
+    fn unary(&mut self) -> Ast {
+        match self.peekType().unwrap() {
+            TokenType::Not => {
+                let op = self.eat(self.peekType().unwrap()).value;
+                Ast::Unary(TokenType::Not, Box::new(self.unary()))
+            }
+            _ => self.call(),
+        }
+    }
+
     pub fn expr(&mut self) -> Ast {
-        let left = self.simple();
+        let left = self.unary();
         if self.peekType().unwrap().isOperator() {
             let op = self.eat(self.peekType().unwrap())._type;
             let right = self.expr();
@@ -312,6 +379,35 @@ impl Parser {
         Ast::Conditional(Box::new(condition), body, otherwise)
     }
 
+    fn assignStmt(&mut self) -> Ast {
+        self.eatKeyword("prepare");
+        let name = self.eat(TokenType::Identifier).value;
+
+        if matches!(self.peekType().unwrap(), TokenType::Period) {
+            self.eat(TokenType::Period);
+            let property = self.eat(TokenType::Identifier).value;
+            self.eatKeyword("as");
+            let value = self.expr();
+            return Ast::Set(name, property, Box::new(value.clone()));
+        }
+
+        self.eatKeyword("as");
+        let value = self.expr();
+        Ast::Var(name, Some(Box::new(value)))
+    }
+
+    fn structStmt(&mut self) -> Ast {
+        self.eatKeyword("brush");
+        let name = self.eat(TokenType::Identifier).value;
+        self.eatKeyword("has"); // todo: remove this or change it
+
+        self.eat(TokenType::LeftBrace);
+        let members = self.identifierList();
+        self.eat(TokenType::RightBrace);
+
+        Ast::Struct(name, members)
+    }
+
     pub fn stmt(&mut self) -> Ast {
         let next = self.peek();
         match next {
@@ -331,6 +427,12 @@ impl Parser {
                     }
                     "if" => {
                         return self.conditionalStmt("if".to_owned());
+                    }
+                    "prepare" => {
+                        return self.assignStmt();
+                    }
+                    "brush" => {
+                        return self.structStmt();
                     }
                     _ => {
                         panic!("Unexpected keyword: {:?}", token.value);
