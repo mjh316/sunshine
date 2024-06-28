@@ -109,7 +109,7 @@ impl Parser {
             TokenType::Identifier => return Ast::Var(token.value.clone(), None),
             TokenType::LeftParen => {
                 let expr = self.expr();
-                println!("RIGHTPAREN 1");
+                // println!("RIGHTPAREN 1");
                 self.eat(TokenType::RightParen);
                 return expr;
             }
@@ -129,7 +129,7 @@ impl Parser {
                         }
                     }
 
-                    println!("RIGHTPAREN 2");
+                    // println!("RIGHTPAREN 2");
                     self.eat(TokenType::RightParen);
 
                     return Ast::Instance(id, members);
@@ -154,21 +154,21 @@ impl Parser {
                     let mut args = vec![];
                     if !matches!(self.peekType().unwrap(), TokenType::RightParen) {
                         args = self.exprList();
-                        println!("args: {:?}", args);
+                        // println!("args: {:?}", args);
                     } else {
-                        println!("no arguments to function call: {:?}", expr);
+                        // println!("no arguments to function call: {:?}", expr);
                     }
 
-                    println!("RIGHTPAREN 3");
-                    println!(
-                        "eaten right parens in call: {:?}",
-                        self.eat(TokenType::RightParen)
-                    );
-                    println!("self.current in call: {:?}", self.current);
-                    // println!("eaten right parens in call: {:?}", expr);
+                    // println!("RIGHTPAREN 3");
+                    // println!(
+                    // "eaten right parens in call: {:?}",
+                    self.eat(TokenType::RightParen);
+                    // );
+                    // println!("self.current in call: {:?}", self.current);
+                    // // println!("eaten right parens in call: {:?}", expr);
                     expr = Ast::Call(Box::new(expr), args);
 
-                    println!("expr: {:?}", expr);
+                    // println!("expr: {:?}", expr);
                 }
                 TokenType::LeftBracket => {
                     self.eat(TokenType::LeftBracket);
@@ -199,7 +199,7 @@ impl Parser {
 
     pub fn expr(&mut self) -> Ast {
         let left = self.unary();
-        println!("left: {:?}", left);
+        // println!("left: {:?}", left);
         if self.peekType().unwrap().isOperator() {
             let op = self.eat(self.peekType().unwrap())._type;
             let right = self.expr();
@@ -284,7 +284,7 @@ impl Parser {
             self.eatKeyword("needs");
             self.eat(TokenType::LeftParen);
             params = self.identifierList();
-            println!("RIGHTPAREN 4");
+            // println!("RIGHTPAREN 4");
             self.eat(TokenType::RightParen);
         }
 
@@ -314,7 +314,7 @@ impl Parser {
         if range.len() != 2 {
             panic!("Expected range to have 2 elements, got {:?}", range.len());
         }
-        println!("RIGHTPAREN 5");
+        // println!("RIGHTPAREN 5");
         self.eat(TokenType::RightParen);
 
         self.eat(TokenType::LeftBrace);
@@ -332,7 +332,7 @@ impl Parser {
 
         self.eat(TokenType::LeftParen);
         let condition = self.expr();
-        println!("RIGHTPAREN 6");
+        // println!("RIGHTPAREN 6");
         self.eat(TokenType::RightParen);
 
         self.eat(TokenType::LeftBrace);
@@ -354,28 +354,28 @@ impl Parser {
         if keyword != "else" {
             self.eat(TokenType::LeftParen);
             condition = self.expr();
-            println!("RIGHTPAREN 7");
-            println!("self.current in conditionalStmt: {:?}", self.current);
+            // println!("RIGHTPAREN 7");
+            // println!("self.current in conditionalStmt: {:?}", self.current);
             self.eat(TokenType::RightParen);
         }
 
-        println!("self.current1 in conditionalStmt: {:?}", self.current);
+        // println!("self.current1 in conditionalStmt: {:?}", self.current);
         self.eat(TokenType::LeftBrace);
-        println!("self.current2 in conditionalStmt: {:?}", self.current);
+        // println!("self.current2 in conditionalStmt: {:?}", self.current);
         let mut body = vec![];
-        println!("starting conditional body: {:?}", body);
+        // println!("starting conditional body: {:?}", body);
         while !matches!(self.peekType().unwrap(), TokenType::RightBrace) {
-            println!("peekType: {:?}", self.peekType().unwrap());
-            println!("self.current3 in conditionalStmt: {:?}", self.current);
+            // println!("peekType: {:?}", self.peekType().unwrap());
+            // println!("self.current3 in conditionalStmt: {:?}", self.current);
             body.push(self.stmt());
-            println!("self.current4 in conditionalStmt: {:?}", self.current);
-            println!("conditional body: {:?}", body)
+            // println!("self.current4 in conditionalStmt: {:?}", self.current);
+            // println!("conditional body: {:?}", body)
         }
-        println!("end of conditional body: {:?}", body);
-        println!(
-            "eaten right brace in conditionalStmt: {:?}",
-            self.eat(TokenType::RightBrace)
-        );
+        // println!("end of conditional body: {:?}", body);
+        // println!(
+        // "eaten right brace in conditionalStmt: {:?}",
+        self.eat(TokenType::RightBrace);
+        // );
 
         let mut otherwise = vec![];
         loop {
@@ -425,7 +425,7 @@ impl Parser {
 
     pub fn stmt(&mut self) -> Ast {
         let next = self.peek();
-        println!("next token in stmt(): {:?}", next);
+        // println!("next token in stmt(): {:?}", next);
         match next {
             Some(token) => match token._type {
                 TokenType::Keyword => match token.value.as_str() {
