@@ -59,32 +59,7 @@ pub enum Ast {
     Get(Box<Ast>, Box<Ast>, bool),
     PointGet(Box<Ast>, String),
     Unary(TokenType, Box<Ast>),
-}
-
-impl Clone for Ast {
-    fn clone(&self) -> Self {
-        match self {
-            Ast::Literal(lit) => Ast::Literal(lit.clone()),
-            Ast::Array(arr) => Ast::Array(arr.clone()),
-            Ast::Var(name, value) => Ast::Var(name.clone(), value.clone()),
-            Ast::Binary(left, op, right) => Ast::Binary(left.clone(), op.clone(), right.clone()),
-            Ast::Func(name, params, body) => Ast::Func(name.clone(), params.clone(), body.clone()),
-            Ast::Return(value) => Ast::Return(value.clone()),
-            Ast::For(id, range, body) => Ast::For(id.clone(), range.clone(), body.clone()),
-            Ast::While(cond, body) => Ast::While(cond.clone(), body.clone()),
-            Ast::Conditional(cond, if_body, else_body) => {
-                Ast::Conditional(cond.clone(), if_body.clone(), else_body.clone())
-            }
-            Ast::Set(obj, field, value) => Ast::Set(obj.clone(), field.clone(), value.clone()),
-            Ast::Struct(name, fields) => Ast::Struct(name.clone(), fields.clone()),
-            Ast::Instance(name, fields) => Ast::Instance(name.clone(), fields.clone()),
-            Ast::Call(callee, args) => Ast::Call(callee.clone(), args.clone()),
-            Ast::Get(obj, prop, is_bracket) => Ast::Get(obj.clone(), prop.clone(), *is_bracket),
-            Ast::PointGet(obj, field) => Ast::PointGet(obj.clone(), field.clone()),
-            Ast::Unary(op, expr) => Ast::Unary(op.clone(), expr.clone()),
-            Ast::Invoke(func) => Ast::Invoke(Box::new(func.clone())),
-        }
-    }
+    // result of setting up a closure
 }
 
 impl From<Ast> for String {

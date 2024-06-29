@@ -2,8 +2,11 @@ mod ast;
 mod interpreter;
 mod lexer;
 mod parser;
+mod stdlib;
 
-use std::env;
+use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
+
+use interpreter::Interpreter;
 
 fn read_file(location: &str) -> String {
     std::fs::read_to_string(location)
@@ -66,6 +69,8 @@ fn main() {
                     .as_str(),
                 );
             }
+
+            Interpreter::run(ast, Rc::new(RefCell::new(HashMap::new())));
             // println!("{}", program);
         }
         None => {

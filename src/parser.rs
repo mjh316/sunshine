@@ -165,7 +165,7 @@ impl Parser {
                     self.eat(TokenType::RightParen);
                     // );
                     // println!("self.current in call: {:?}", self.current);
-                    // // println!("eaten right parens in call: {:?}", expr);
+                    println!("eaten right parens in call: {:?}", expr);
                     expr = Ast::Call(Box::new(expr), args);
 
                     // println!("expr: {:?}", expr);

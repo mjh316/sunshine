@@ -107,6 +107,12 @@ impl Into<TokenContentType> for bool {
     }
 }
 
+impl Into<TokenContentType> for i64 {
+    fn into(self) -> TokenContentType {
+        TokenContentType::Number(self as f64)
+    }
+}
+
 impl From<Token> for String {
     fn from(token: Token) -> String {
         format!(
