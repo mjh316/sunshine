@@ -6,7 +6,7 @@ mod stdlib;
 
 use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
 
-use interpreter::Interpreter;
+// use interpreter::Interpreter;
 
 fn read_file(location: &str) -> String {
     std::fs::read_to_string(location)

@@ -16,7 +16,7 @@ sketch seed {
     finished cells
 }
 
-brush Cell has { x, y, live }
+prepare cells as seed()
 
-~prepare cells as seed()
+~brush Cell has { x, y, live }
 ~prepare cell as prep Cell(x: x, y: y, live: live)

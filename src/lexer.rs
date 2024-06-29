@@ -37,6 +37,7 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Slash,
+    Modulo,
     EOF,
     Boolean,
 }
@@ -71,6 +72,7 @@ impl Serialize for TokenType {
             TokenType::Lte => serializer.serialize_str("<="),
             TokenType::Plus => serializer.serialize_str("+"),
             TokenType::Minus => serializer.serialize_str("-"),
+            TokenType::Modulo => serializer.serialize_str("%"),
             TokenType::Asterisk => serializer.serialize_str("*"),
             TokenType::Slash => serializer.serialize_str("/"),
             TokenType::EOF => serializer.serialize_str("EOF"),
@@ -126,6 +128,7 @@ impl TokenType {
                 | TokenType::Minus
                 | TokenType::Asterisk
                 | TokenType::Slash
+                | TokenType::Modulo
         )
     }
 
@@ -141,7 +144,7 @@ impl TokenType {
             | TokenType::And
             | TokenType::Or => 0,
             TokenType::Plus | TokenType::Minus => 1,
-            TokenType::Asterisk | TokenType::Slash => 2,
+            TokenType::Asterisk | TokenType::Slash | TokenType::Modulo => 2,
             _ => -1,
         }
     }
