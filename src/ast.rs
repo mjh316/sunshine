@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Not};
+use std::{collections::HashMap, ops::Not, os::macos::raw::stat};
 
 use serde::{
     ser::{SerializeMap, SerializeSeq},
@@ -81,8 +81,11 @@ impl Serialize for Ast {
                 return stateMap.end();
             }
             Ast::Literal(literal) => {
-                // ?
-                return literal.content.serialize(serializer);
+                let mut state = serializer.serialize_map(Some(2))?;
+                let r#type = "Literal";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("value", &literal.content)?;
+                return state.end();
             }
             Ast::Var(name, value) => {
                 let mut state = serializer.serialize_map(Some(3))?;
@@ -98,22 +101,112 @@ impl Serialize for Ast {
                 // return state.end();
             }
             Ast::Binary(left, op, right) => {
-                let mut state = serializer.serialize_seq(Some(3))?;
-                state.serialize_element(&left)?;
-                state.serialize_element(&op)?;
-                state.serialize_element(&right)?;
+                let mut state = serializer.serialize_map(Some(4))?;
+                let r#type = "Binary";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("left", &left)?;
+                state.serialize_entry("operator", &op)?;
+                state.serialize_entry("right", &right)?;
                 return state.end();
+                // let mut state = serializer.serialize_seq(Some(3))?;
+                // state.serialize_element(&left)?;
+                // state.serialize_element(&op)?;
+                // state.serialize_element(&right)?;
+                // return state.end();
             }
             Ast::Func(name, params, body) => {
-                let mut state = serializer.serialize_seq(Some(3))?;
-                state.serialize_element(&name)?;
-                state.serialize_element(&params)?;
-                state.serialize_element(&body)?;
+                let mut state = serializer.serialize_map(Some(4))?;
+                let r#type = "Func";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("name", &name)?;
+                state.serialize_entry("params", &params)?;
+                state.serialize_entry("body", &body)?;
                 return state.end();
             }
             Ast::Return(expr) => {
-                let mut state = serializer.serialize_seq(Some(1))?;
-                state.serialize_element(&expr)?;
+                let mut state = serializer.serialize_map(Some(2))?;
+                let r#type = "Return";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("value", &expr)?;
+                return state.end();
+            }
+            Ast::For(id, range, body) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "For";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("id", &id)?;
+                state.serialize_entry("range", &range)?;
+                state.serialize_entry("body", &body)?;
+                return state.end();
+            }
+            Ast::While(condition, body) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "While";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("condition", &condition)?;
+                state.serialize_entry("body", &body)?;
+                return state.end();
+            }
+            Ast::Conditional(condition, r#if, r#else) => {
+                let mut state = serializer.serialize_map(Some(4))?;
+                let r#type = "Conditional";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("condition", &condition)?;
+                state.serialize_entry("body", &r#if)?;
+                state.serialize_entry("otherwise", &r#else)?;
+                return state.end();
+            }
+            Ast::Set(caller, property, value) => {
+                let mut state = serializer.serialize_map(Some(4))?;
+                let r#type = "Set";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("caller", &caller)?;
+                state.serialize_entry("property", &property)?;
+                state.serialize_entry("value", &value)?;
+                return state.end();
+            }
+            Ast::Struct(name, members) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "Struct";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("name", &name)?;
+                state.serialize_entry("members", &members)?;
+                return state.end();
+            }
+            Ast::Instance(name, members) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "Instance";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("name", &name)?;
+                state.serialize_entry("members", &members)?;
+                return state.end();
+            }
+            Ast::Call(caller, args) => {
+                /*
+                 * TODO: make sure that this works when caller is an AST and not a primitive string
+                 */
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "Call";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("caller", &caller)?;
+                state.serialize_entry("args", &args)?;
+                return state.end();
+            }
+            Ast::Get(caller, property, is_expr) => {
+                let mut state = serializer.serialize_map(Some(4))?;
+                let r#type = "Get";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("caller", &caller)?;
+                state.serialize_entry("property", &property)?;
+                state.serialize_entry("isExpr", &is_expr)?;
+                return state.end();
+            }
+            Ast::Unary(operator, apply) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "Unary";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("operator", &operator)?;
+                state.serialize_entry("apply", &apply)?;
                 return state.end();
             }
             _ => unimplemented!(),

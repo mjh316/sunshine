@@ -9,7 +9,7 @@ fn KEYWORDS() -> HashSet<&'static str> {
     ])
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub enum TokenType {
     LeftParen,
     RightParen,
@@ -39,6 +39,44 @@ pub enum TokenType {
     Slash,
     EOF,
     Boolean,
+}
+
+impl Serialize for TokenType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        match self {
+            TokenType::LeftParen => serializer.serialize_str("("),
+            TokenType::RightParen => serializer.serialize_str(")"),
+            TokenType::LeftBrace => serializer.serialize_str("{"),
+            TokenType::RightBrace => serializer.serialize_str("}"),
+            TokenType::LeftBracket => serializer.serialize_str("["),
+            TokenType::RightBracket => serializer.serialize_str("]"),
+            TokenType::Period => serializer.serialize_str("."),
+            TokenType::Comma => serializer.serialize_str(","),
+            TokenType::Colon => serializer.serialize_str(":"),
+            TokenType::Keyword => serializer.serialize_str("Keyword"),
+            TokenType::Identifier => serializer.serialize_str("Identifier"),
+            TokenType::String => serializer.serialize_str("String"),
+            TokenType::Number => serializer.serialize_str("Number"),
+            TokenType::Or => serializer.serialize_str("||"),
+            TokenType::Not => serializer.serialize_str("!"),
+            TokenType::And => serializer.serialize_str("&&"),
+            TokenType::Equiv => serializer.serialize_str("=="),
+            TokenType::NotEquiv => serializer.serialize_str("!="),
+            TokenType::Gt => serializer.serialize_str(">"),
+            TokenType::Gte => serializer.serialize_str(">="),
+            TokenType::Lt => serializer.serialize_str("<"),
+            TokenType::Lte => serializer.serialize_str("<="),
+            TokenType::Plus => serializer.serialize_str("+"),
+            TokenType::Minus => serializer.serialize_str("-"),
+            TokenType::Asterisk => serializer.serialize_str("*"),
+            TokenType::Slash => serializer.serialize_str("/"),
+            TokenType::EOF => serializer.serialize_str("EOF"),
+            TokenType::Boolean => serializer.serialize_str("Boolean"),
+        }
+    }
 }
 
 impl std::fmt::Display for TokenType {
@@ -492,6 +530,8 @@ impl Lexer {
 
                     let _type = if KEYWORDS().contains(&identifier.as_str()) {
                         TokenType::Keyword
+                    } else if identifier == "true" || identifier == "false" {
+                        TokenType::Boolean
                     } else {
                         TokenType::Identifier
                     };

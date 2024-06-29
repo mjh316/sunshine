@@ -187,7 +187,13 @@ impl Parser {
                 TokenType::Period => {
                     self.eat(TokenType::Period);
                     let property = self.eat(TokenType::Identifier).value.clone();
-                    expr = Ast::PointGet(Box::new(expr), property);
+                    expr = Ast::Get(
+                        Box::new(expr),
+                        Box::new(Ast::Literal(Literal {
+                            content: property.into(),
+                        })),
+                        false,
+                    );
                 }
                 _ => break,
             }
