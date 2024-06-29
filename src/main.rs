@@ -44,23 +44,20 @@ fn main() {
                 );
             }
 
-            // let mut parser = parser::Parser::new(tokens);
+            let mut parser = parser::Parser::new(tokens);
 
-            // let ast = parser.parse();
+            let ast = parser.parse();
 
-            // if debug {
-            //     write_file(
-            //         "ast.txt",
-            //         format!(
-            //             "{:#?}",
-            //             ast.clone()
-            //                 .into_iter()
-            //                 .map(|x| String::from(x))
-            //                 .collect::<Vec<String>>()
-            //         )
-            //         .as_str(),
-            //     );
-            // }
+            if debug {
+                write_file(
+                    "ast.txt",
+                    format!(
+                        "{:#?}",
+                        serde_json::to_string(&ast.clone()).unwrap().as_str()
+                    )
+                    .as_str(),
+                );
+            }
 
             // Interpreter::run(ast, Rc::new(RefCell::new(HashMap::new())));
             // println!("{}", program);

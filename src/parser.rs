@@ -50,10 +50,11 @@ impl Parser {
     }
 
     pub fn eat(&mut self, token_type: TokenType) -> Token {
-        println!(
-            "self.current in eat: {:?} with expected type: {:?}",
-            self.current, token_type
-        );
+        // println!(
+        // "self.current in eat: {:?} with expected type: {:?}",
+        // self.current,
+        // token_type
+        // );
         match self.peekType() {
             Some(tokenType2) => {
                 if tokenType2.to_string() != token_type.to_string() {
@@ -75,7 +76,7 @@ impl Parser {
     fn identifierList(&mut self) -> Vec<String> {
         let mut identifiers = vec![];
         identifiers.push(self.eat(TokenType::Identifier).value);
-        println!("identifiers: {:?}", identifiers);
+        // println!("identifiers: {:?}", identifiers);
         loop {
             let next = self.peek();
             match next {
@@ -105,7 +106,7 @@ impl Parser {
             TokenType::LeftBracket => {
                 let mut items = Vec::new();
                 let nextType = self.peekType();
-                println!("nextType in simple: {:?}", nextType);
+                // println!("nextType in simple: {:?}", nextType);
                 if !nextType.is_some_and(|x| matches!(x, TokenType::RightBracket)) {
                     items = self.exprList();
                 }
@@ -171,7 +172,7 @@ impl Parser {
                     self.eat(TokenType::RightParen);
                     // );
                     // println!("self.current in call: {:?}", self.current);
-                    println!("eaten right parens in call: {:?}", expr);
+                    // println!("eaten right parens in call: {:?}", expr);
                     expr = Ast::Call(Box::new(expr), args);
 
                     // println!("expr: {:?}", expr);
@@ -179,7 +180,7 @@ impl Parser {
                 TokenType::LeftBracket => {
                     self.eat(TokenType::LeftBracket);
                     let property = self.expr();
-                    println!("property: {:?}", property);
+                    // println!("property: {:?}", property);
                     self.eat(TokenType::RightBracket);
                     expr = Ast::Get(Box::new(expr), Box::new(property), true);
                 }

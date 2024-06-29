@@ -1,5 +1,10 @@
 use std::{collections::HashMap, ops::Not};
 
+use serde::{
+    ser::{SerializeMap, SerializeSeq},
+    Serialize,
+};
+
 use crate::lexer::{TokenContentType, TokenType};
 
 #[derive(Debug, Clone)]
@@ -60,6 +65,60 @@ pub enum Ast {
     PointGet(Box<Ast>, String),
     Unary(TokenType, Box<Ast>),
     // result of setting up a closure
+}
+
+impl Serialize for Ast {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self.clone() {
+            Ast::Array(array) => {
+                let mut stateMap = serializer.serialize_map(Some(2))?;
+                let r#type = "Array";
+                stateMap.serialize_entry("type", &r#type)?;
+                stateMap.serialize_entry("value", &array.content)?;
+                return stateMap.end();
+            }
+            Ast::Literal(literal) => {
+                // ?
+                return literal.content.serialize(serializer);
+            }
+            Ast::Var(name, value) => {
+                let mut state = serializer.serialize_map(Some(3))?;
+                let r#type = "Var";
+                state.serialize_entry("type", &r#type)?;
+                state.serialize_entry("name", &name)?;
+                state.serialize_entry("value", &value)?;
+                return state.end();
+                // state.serialize_element(&r#type)?;
+                // state.serialize_element(&name)?;
+                // let value: Ast = *value.unwrap();
+                // state.serialize_element(&value)?;
+                // return state.end();
+            }
+            Ast::Binary(left, op, right) => {
+                let mut state = serializer.serialize_seq(Some(3))?;
+                state.serialize_element(&left)?;
+                state.serialize_element(&op)?;
+                state.serialize_element(&right)?;
+                return state.end();
+            }
+            Ast::Func(name, params, body) => {
+                let mut state = serializer.serialize_seq(Some(3))?;
+                state.serialize_element(&name)?;
+                state.serialize_element(&params)?;
+                state.serialize_element(&body)?;
+                return state.end();
+            }
+            Ast::Return(expr) => {
+                let mut state = serializer.serialize_seq(Some(1))?;
+                state.serialize_element(&expr)?;
+                return state.end();
+            }
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl From<Ast> for String {

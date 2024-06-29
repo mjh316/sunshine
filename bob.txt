@@ -1,2 +1,2 @@
-2 + 4
-[2, 3]
+prepare rows as 1 + 2
+prepare jobs as [2, 3, "a"]
