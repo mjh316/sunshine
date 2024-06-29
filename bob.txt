@@ -1,22 +1,7 @@
-prepare rows as "hello"
-prepare jobs as [2, 3, "a"]
-prepare cols as 3 > 2
 prepare i as 0
 
 while (i < 2) {
     prepare i as i + 1
 }
 
-sketch seed {
-    prepare cells as []
-    if (!false) {
-        cells.add(i + 1)
-    }
-    cells.add(cells[100 - 100])
-    finished cells
-}
-
-prepare cells as seed()
-
-~brush Cell has { x, y, live }
-~prepare cell as prep Cell(x: x, y: y, live: live)
+ink(i)
