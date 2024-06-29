@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
+
 fn KEYWORDS() -> HashSet<&'static str> {
     HashSet::from([
         "prepare", "as", "brush", "prep", "has", "sketch", "needs", "finished", "loop", "through",
@@ -7,7 +9,7 @@ fn KEYWORDS() -> HashSet<&'static str> {
     ])
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum TokenType {
     LeftParen,
     RightParen,
@@ -42,6 +44,31 @@ pub enum TokenType {
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", format!("{:?}", self).to_lowercase())
+    }
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Token {{ type: {:?},  value: {},  content: {:?}, line: {}, column: {} }}",
+            self._type, self.value, self.content, self.line, self.column
+        )
+    }
+}
+
+impl Serialize for Token {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        let mut state = serializer.serialize_struct("Token", 5)?;
+        state.serialize_field("type", &self._type)?;
+        state.serialize_field("value", &self.value)?;
+        state.serialize_field("content", &self.content)?;
+        state.serialize_field("line", &self.line)?;
+        state.serialize_field("column", &self.column)?;
+        state.end()
     }
 }
 
@@ -82,11 +109,24 @@ impl TokenType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum TokenContentType {
     String(String),
     Number(f64),
     Boolean(bool),
+}
+
+impl Serialize for TokenContentType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        match self {
+            TokenContentType::String(s) => serializer.serialize_str(s),
+            TokenContentType::Number(n) => serializer.serialize_f64(*n),
+            TokenContentType::Boolean(b) => serializer.serialize_bool(*b),
+        }
+    }
 }
 
 impl Into<TokenContentType> for String {
@@ -122,7 +162,7 @@ impl From<Token> for String {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Token {
     pub _type: TokenType,
     pub value: String,
