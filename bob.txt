@@ -1,7 +1,17 @@
 prepare i as 0
+prepare sum as 0
 
-while (i < 2) {
+prepare a as 1
+prepare b as 1
+prepare name as "Justin"
+
+ink(a)
+while (i < 40) {
+    prepare tmp as b
+    prepare b as a + b
+    prepare a as tmp
+    ink(name + " Hello ")
     prepare i as i + 1
 }
 
-ink(i)
+~ink(sum)

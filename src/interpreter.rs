@@ -86,6 +86,21 @@ impl Interpreter {
                 result.push_str("}");
                 return result;
             }
+            Ast::Binary(_, _, _) => {
+                let result = Interpreter::evaluate(
+                    Box::new(ast.clone()),
+                    scope.clone(),
+                    functionScope.clone(),
+                    structScope.clone(),
+                );
+                println!("result: {:?}", result);
+                return Interpreter::toPrint(
+                    result,
+                    scope.clone(),
+                    functionScope.clone(),
+                    structScope.clone(),
+                );
+            }
             _ => {
                 panic!("Expected expression but got statement {:?}", ast);
             }
