@@ -233,21 +233,120 @@ impl Interpreter {
                     functionScope.clone(),
                     structScope.clone(),
                 );
-                let args = args
-                    .into_iter()
-                    .map(|x| {
-                        Interpreter::evaluate(
-                            Box::new(x),
-                            scope.clone(),
-                            functionScope.clone(),
-                            structScope.clone(),
-                        )
-                    })
-                    .collect::<Vec<_>>();
 
-                // caller should be a function, so we can call it somehow
-                unimplemented!("Call not implemented yet");
+                match caller {
+                    Ast::Func(name, _, _) => {
+                        if !Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
+                            panic!("Function {} not found in scope", name);
+                        } else {
+                            let mut functionScopeMap = functionScope.borrow_mut();
+                            let function = functionScopeMap
+                                .get_mut(&name)
+                                .expect(format!("Function {} not found in scope", name).as_str());
+                            return function(args);
+                        }
+                    }
+                    _ => {
+                        panic!("Expected function but got {:?}", caller);
+                    }
+                }
             }
+            Ast::Get(caller_ast, property_ast, is_expr) => {
+                // Evaluate the caller
+                let caller = Interpreter::evaluate(
+                    caller_ast,
+                    scope.clone(),
+                    functionScope.clone(),
+                    structScope.clone(),
+                );
+
+                // Determine the property
+                let property = if is_expr {
+                    Interpreter::evaluate(
+                        property_ast,
+                        scope.clone(),
+                        functionScope.clone(),
+                        structScope.clone(),
+                    )
+                } else {
+                    *property_ast
+                };
+
+                match caller {
+                    Ast::Array(array) => {
+                        if !matches!(
+                            property,
+                            Ast::Literal(Literal {
+                                content: TokenContentType::Number(_)
+                            })
+                        ) {
+                            panic!("Expected number as index, got {:?}", property);
+                        }
+                        if let Ast::Literal(Literal {
+                            content: TokenContentType::Number(n),
+                        }) = property
+                        {
+                            return array.content.get(n as usize).unwrap().clone();
+                        } else {
+                            panic!("Expected number as index, got {:?}", property);
+                        }
+                    }
+                    Ast::Instance(name, members) => {
+                        let propertyKey = match property {
+                            Ast::Literal(Literal {
+                                content: TokenContentType::String(s),
+                            }) => s,
+                            _ => panic!("Expected string as property, got {:?}", property),
+                        };
+
+                        if !members.contains_key(&propertyKey.to_string()) {
+                            panic!("Property {} not found in instance {}", propertyKey, name);
+                        }
+                        return members.get(&propertyKey).unwrap().clone(); // WILL be a value or a function or SOMETHING
+                    }
+                    Ast::Var(name, _value) => {
+                        if !Interpreter::inScope(scope.clone(), name.clone()) {
+                            panic!("Variable {} not found in scope", name);
+                        }
+                        let value = scope.borrow_mut().get(&name).unwrap().clone();
+                        match value {
+                            Ast::Instance(_, _) => {
+                                let instance = value;
+                                let propertyKey = match property {
+                                    Ast::Literal(Literal {
+                                        content: TokenContentType::String(s),
+                                    }) => s,
+                                    _ => panic!("Expected string as property, got {:?}", property),
+                                };
+
+                                if !matches!(instance, Ast::Instance(_, _)) {
+                                    panic!("Expected instance but got {:?}", instance);
+                                }
+
+                                if let Ast::Instance(_, members) = instance {
+                                    if !members.contains_key(&propertyKey.to_string()) {
+                                        panic!(
+                                            "Property {} not found in instance {}",
+                                            propertyKey, name
+                                        );
+                                    }
+                                    return members.get(&propertyKey).unwrap().clone();
+                                // WILL be a value or a function or SOMETHING
+                                } else {
+                                    panic!("Expected instance but got {:?}", instance);
+                                }
+                            }
+                            _ => {
+                                panic!("Expected instance but got {:?}", value);
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("Expected instance but got {:?}", caller);
+                    }
+                }
+            }
+
             _ => {
                 panic!("Expected expression but got statement {:?}", value);
             }
@@ -295,10 +394,31 @@ impl Interpreter {
                 retStructScope.borrow_mut().insert(id, fields);
             }
             Ast::Func(name, params, body) => {
-                let functionScope = retFunctionScope.clone();
+                let functionScope = Rc::clone(&retFunctionScope);
+                let valueScope = Rc::clone(&retScope);
+                let structureScope = Rc::clone(&retStructScope);
+                let functionBody = body.clone();
                 let function = Box::new(move |args: Vec<Ast>| {
-                    let mut localScope = functionScope.clone();
-                    for 
+                    let mut localScope = valueScope.clone();
+                    for (i, param) in params.iter().enumerate() {
+                        localScope
+                            .borrow_mut()
+                            .insert(param.clone(), args.get(i).unwrap().clone());
+                    }
+
+                    let functionScope = Rc::clone(&functionScope);
+
+                    let result = Interpreter::run(
+                        functionBody.clone(),
+                        localScope,
+                        functionScope,
+                        structureScope.clone(),
+                    );
+
+                    match result.1 {
+                        Some(value) => value,
+                        None => Ast::None,
+                    }
                 });
 
                 retFunctionScope.borrow_mut().insert(name, function);
@@ -492,8 +612,6 @@ impl Interpreter {
                 if !Interpreter::inScope(retScope.clone(), caller.clone()) {
                     panic!("Instance {} not found in scope", caller);
                 }
-
-                unimplemented!("Set not implemented yet");
             }
             Ast::Get(_, _, _) => {
                 unimplemented!("Get not implemented yet");

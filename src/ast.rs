@@ -124,7 +124,7 @@ impl Serialize for Ast {
                 let r#type = "Func";
                 state.serialize_entry("type", &r#type)?;
                 state.serialize_entry("name", &name)?;
-                state.serialize_entry("args", &params)?;
+                state.serialize_entry("params", &params)?;
                 state.serialize_entry("body", &body)?;
                 return state.end();
             }

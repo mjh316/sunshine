@@ -167,8 +167,8 @@ class Interpreter {
       case "Func": {
         let func = (args) => {
           let funcScope = { ...scope };
-          for (let i = 0; i < node.args.length; i++) {
-            funcScope[node.args[i]] = args[i];
+          for (let [i, param] of node.params.entries()) {
+            funcScope[param] = args[i];
           }
 
           try {
