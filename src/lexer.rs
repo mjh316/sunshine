@@ -547,7 +547,7 @@ impl Lexer {
                         TokenType::Identifier
                     };
 
-                    println!("Identifier: {}", identifier);
+                    // println!("Identifier: {}", identifier);
                     self.tokens.push(Token::new(
                         _type,
                         identifier.clone(),

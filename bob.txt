@@ -6,12 +6,14 @@ let b = 1
 let name = "Justin"
 
 ink(a)
-while (i < 40) {
+while (i < 10) {
     let tmp = b
     let b = a + b
     let a = tmp
-    ink(name * 2)
+    ink((name + " ") * 5)
+    ink(a)
+    ink(b)
     let i = i + 1
 }
 
-~ink(sum)
+~ ink("BOB")
