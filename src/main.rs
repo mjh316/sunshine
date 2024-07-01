@@ -6,7 +6,7 @@ mod stdlib;
 
 use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
 
-use ast::Ast;
+use ast::{Ast, Literal};
 use interpreter::Interpreter;
 
 // use interpreter::Interpreter;
@@ -96,6 +96,19 @@ fn main() {
                         );
                     }
                     Ast::None
+                }),
+            );
+
+            standardLibraryFunctions.borrow_mut().insert(
+                "input".to_string(),
+                Box::new(move |_| {
+                    let mut input = String::new();
+                    std::io::stdin()
+                        .read_line(&mut input)
+                        .expect("Failed to read line");
+                    Ast::Literal(Literal {
+                        content: input.trim().to_string().into(),
+                    })
                 }),
             );
 

@@ -5,12 +5,17 @@ let a = 1
 let b = 1
 let name = "Justin"
 
-func seed needs (s) {
-    let other = "world"
+~func seed needs (s) {
+~    let other = "world"
     ~print(s + " " + other)
-}
+~}
 
-seed("hello")
+~seed("hello")
+
+let input1 = input()
+
+print(input1*100)
+
 ~print(other)
 
 ~print(a)
