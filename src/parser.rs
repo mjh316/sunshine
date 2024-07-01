@@ -97,6 +97,7 @@ impl Parser {
     }
 
     pub fn simple(&mut self) -> Ast {
+        // println!("token: {:?}", self.peek().unwrap());
         let token = self.eat(self.peekType().unwrap());
         match token._type {
             TokenType::String | TokenType::Number | TokenType::Boolean => {
@@ -122,6 +123,7 @@ impl Parser {
             TokenType::Keyword => match token.value.as_str() {
                 "prep" => {
                     let id = self.eat(TokenType::Identifier).value.clone();
+                    // println!("id: {:?}", id);
 
                     self.eat(TokenType::LeftParen);
 
@@ -152,7 +154,10 @@ impl Parser {
 
     fn call(&mut self) -> Ast {
         let mut expr = self.simple();
+        // println!("expr: {:?}", expr);
         loop {
+            // println!("self.peekType().unwrap(): {:?}", self.peekType().unwrap());
+            // println!("self.peek().unwrap(): {:?}", self.peek().unwrap());
             match self.peekType().unwrap() {
                 TokenType::LeftParen => {
                     self.eat(TokenType::LeftParen);
@@ -426,7 +431,7 @@ impl Parser {
     }
 
     fn structStmt(&mut self) -> Ast {
-        self.eatKeyword("brush");
+        self.eatKeyword("struct");
         let name = self.eat(TokenType::Identifier).value;
         self.eatKeyword("has"); // todo: remove this or change it
 
@@ -461,7 +466,7 @@ impl Parser {
                     "let" => {
                         return self.assignStmt();
                     }
-                    "brush" => {
+                    "struct" => {
                         return self.structStmt();
                     }
                     _ => {

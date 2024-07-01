@@ -397,6 +397,9 @@ impl Interpreter {
                                 // println!("args: {:?}", args);
                                 let array = body.get(0).unwrap().clone();
                                 // args.insert(0, array);
+                                /**
+                                 * TODO: figure out how to get this working for array fields of structs
+                                 */
                                 match name.as_str() {
                                     "STDLIB_ARRAY_PUSH" => {
                                         if args.len() != 1 {
@@ -433,6 +436,40 @@ impl Interpreter {
                                             ),
                                         };
                                         array.content.push(Ast::Literal(value));
+
+                                        match &callers[..] {
+                                            [name] => {
+                                                scope.borrow_mut().insert(
+                                                    name.clone(),
+                                                    Ast::Array(array.clone()),
+                                                );
+                                            }
+                                            _ => {}
+                                        }
+
+                                        return Ast::Array(array);
+                                    }
+                                    "STDLIB_ARRAY_POP" => {
+                                        if args.len() != 0 {
+                                            panic!("Expected 0 arguments, got {:?}", args.len());
+                                        }
+
+                                        // println!("STDLIB_ARRAY_POP args: {:?}", args);
+
+                                        if !matches!(array, Ast::Array(_)) {
+                                            panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            );
+                                        }
+                                        let mut array = match array {
+                                            Ast::Array(array) => array,
+                                            _ => panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            ),
+                                        };
+                                        array.content.pop();
 
                                         match &callers[..] {
                                             [name] => {

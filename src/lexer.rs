@@ -4,7 +4,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 fn KEYWORDS() -> HashSet<&'static str> {
     HashSet::from([
-        "let", "=", "brush", "prep", "has", "func", "needs", "finished", "loop", "through",
+        "let", "=", "struct", "prep", "has", "func", "needs", "finished", "loop", "through",
         "while", "if", "elif", "else",
     ])
 }

@@ -129,6 +129,22 @@ fn main() {
                 }),
             );
 
+            standardLibraryFunctions.borrow_mut().insert(
+                "STDLIB_ARRAY_POP".to_string(),
+                Box::new(move |args| {
+                    // println!("ARGS IN ARRAY POP {:?}", args);
+
+                    return match args.get(0) {
+                        Some(Ast::Array(array)) => {
+                            let mut array = array.clone();
+                            array.content.pop();
+                            Ast::Array(array)
+                        }
+                        _ => panic!("Expected array as first argument"),
+                    };
+                }),
+            );
+
             Interpreter::run(ast, scope, standardLibraryFunctions, structScope);
         }
         None => {

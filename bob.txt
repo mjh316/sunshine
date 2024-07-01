@@ -1,3 +1,9 @@
+struct Cell has {x, y}
+
+let cell = prep Cell(x: 2, y: 3)
+
+print(cell)
+
 let i = 0
 let sum = 0
 
@@ -16,10 +22,10 @@ let name = "Justin"
 
 ~print(input1*100)
 
-let arr = [2, 4, "hello"]
-arr.push(1000002)
-print(arr.length)
-print(arr)
+~let arr = [2, 4, "hello"]
+~arr.push(1000002)
+~print(arr.length)
+~print(arr)
 
 ~print(other)
 
