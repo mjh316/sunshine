@@ -295,7 +295,13 @@ impl Interpreter {
                 retStructScope.borrow_mut().insert(id, fields);
             }
             Ast::Func(name, params, body) => {
-                unimplemented!("Function not implemented yet")
+                let functionScope = retFunctionScope.clone();
+                let function = Box::new(move |args: Vec<Ast>| {
+                    let mut localScope = functionScope.clone();
+                    for 
+                });
+
+                retFunctionScope.borrow_mut().insert(name, function);
             }
             Ast::Return(value) => {
                 let value = Interpreter::evaluate(
