@@ -1,8 +1,6 @@
-use core::fmt;
 use std::{
     collections::HashMap,
     ops::{Add, Div, Mul, Not, Rem, Sub},
-    os::macos::raw::stat,
 };
 
 use serde::{

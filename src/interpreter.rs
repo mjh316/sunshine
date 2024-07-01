@@ -1,14 +1,12 @@
 use std::{
-    borrow::Borrow,
-    cell::{Cell, RefCell},
+    cell::{RefCell},
     collections::HashMap,
     rc::Rc,
-    string,
 };
 
 use crate::{
     ast::{Array, Ast, Literal},
-    lexer::{Token, TokenContentType, TokenType},
+    lexer::{TokenContentType, TokenType},
 };
 
 pub struct Interpreter {}
@@ -318,8 +316,8 @@ impl Interpreter {
                     panic!("Instance {} not found in scope", name);
                 }
 
-                let mut structScopeMap = structScope.borrow_mut();
-                let mut instanceConstructor = structScopeMap
+                let structScopeMap = structScope.borrow_mut();
+                let instanceConstructor = structScopeMap
                     .get(&name)
                     .expect(format!("Struct {} not found in scope", name).as_str());
 
@@ -478,9 +476,9 @@ impl Interpreter {
     ) -> (Scope, Option<Ast>) {
         // println!("executing {:?}", node);
         let mut retValue = None;
-        let mut retScope = _scope.clone();
-        let mut retFunctionScope = _functionScope.clone();
-        let mut retStructScope = _structScope.clone();
+        let retScope = _scope.clone();
+        let retFunctionScope = _functionScope.clone();
+        let retStructScope = _structScope.clone();
         match node {
             Ast::Var(name, Some(value)) => {
                 let value = Interpreter::evaluate(
@@ -517,7 +515,7 @@ impl Interpreter {
                 let structureScope = Rc::clone(&retStructScope);
                 let functionBody = body.clone();
                 let function = Box::new(move |args: Vec<Ast>| {
-                    let mut localScope = valueScope.clone();
+                    let localScope = valueScope.clone();
                     for (i, param) in params.iter().enumerate() {
                         localScope
                             .borrow_mut()
@@ -606,7 +604,7 @@ impl Interpreter {
             },
             Ast::For(id, range, body) => {
                 assert!(range.len() == 2);
-                let mut localScope = retScope.clone();
+                let localScope = retScope.clone();
 
                 let mut rangeBegin = 0;
                 let mut rangeEnd = 0;
@@ -722,7 +720,7 @@ impl Interpreter {
                     panic!("Instance {} not found in scope", caller);
                 }
 
-                let mut instance = retScope.borrow_mut().get(&caller).unwrap().clone();
+                let instance = retScope.borrow_mut().get(&caller).unwrap().clone();
                 if let Ast::Instance(name, mut members) = instance {
                     let value = Interpreter::evaluate(
                         value,

@@ -26,7 +26,9 @@ fn write_file(location: &str, data: &str) -> () {
 fn main() {
     let mut argv = env::args().collect::<Vec<String>>();
     let debug = argv.iter().any(|x| x == "--dbg");
-    println!("Debug: {}", debug);
+    if debug {
+        println!("Debug: {}", debug);
+    }
     if debug {
         argv.retain(|x| x != "--dbg");
     }
@@ -35,7 +37,9 @@ fn main() {
 
     match location {
         Some(location) => {
-            println!("Reading file: {}", location);
+            if debug {
+                println!("Reading file: {}", location);
+            }
             let program = read_file(location);
             let mut lexer = lexer::Lexer::new(program);
             let tokens = lexer.scan_tokens();
@@ -75,7 +79,7 @@ fn main() {
             let borrowedStructScope = Rc::clone(&structScope);
 
             standardLibraryFunctions.borrow_mut().insert(
-                "ink".to_string(),
+                "print".to_string(),
                 Box::new(move |args: Vec<Ast>| {
                     let scope = Rc::clone(&borrowedScope);
                     let standardLibraryFunctions = Rc::clone(&borrowedStandardLibraryFunctions);

@@ -5,15 +5,15 @@ let a = 1
 let b = 1
 let name = "Justin"
 
-ink(a)
+print(a)
 while (i < 10) {
     let tmp = b
     let b = a + b
     let a = tmp
-    ink((name + " ") * 5)
-    ink(a)
-    ink(b)
+    print((name + " ") * 5)
+    print(a)
+    print(b)
     let i = i + 1
 }
 
-~ ink("BOB")
+~ print("BOB")

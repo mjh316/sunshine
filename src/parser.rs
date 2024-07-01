@@ -3,7 +3,6 @@ use crate::ast::Ast;
 use crate::ast::Literal;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 pub struct Parser {
