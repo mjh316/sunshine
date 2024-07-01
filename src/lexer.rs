@@ -9,7 +9,7 @@ fn KEYWORDS() -> HashSet<&'static str> {
     ])
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash)]
 pub enum TokenType {
     LeftParen,
     RightParen,

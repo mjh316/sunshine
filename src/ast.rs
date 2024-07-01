@@ -1,4 +1,8 @@
-use std::{collections::HashMap, ops::Not, os::macos::raw::stat};
+use std::{
+    collections::HashMap,
+    ops::{Add, Div, Mul, Not, Rem, Sub},
+    os::macos::raw::stat,
+};
 
 use serde::{
     ser::{SerializeMap, SerializeSeq},
@@ -64,6 +68,7 @@ pub enum Ast {
     Get(Box<Ast>, Box<Ast>, bool),
     PointGet(Box<Ast>, String),
     Unary(TokenType, Box<Ast>),
+    None,
     // result of setting up a closure
 }
 
@@ -263,6 +268,7 @@ impl From<Ast> for String {
             Ast::Unary(op, expr) => {
                 format!("({:?} {:?})", op, expr)
             }
+            Ast::None => "None".to_string(),
         }
     }
 }
@@ -279,6 +285,275 @@ impl Not for Ast {
                 _ => panic!("Expected boolean literal but got {:?}", literal.content),
             },
             _ => panic!("Expected boolean literal but got {:?}", self),
+        }
+    }
+}
+
+impl Add for Ast {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        // support strings and numbers
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => Ast::Literal(Literal {
+                            content: TokenContentType::Number(n + other_n),
+                        }),
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                TokenContentType::String(s) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::String(other_s) => Ast::Literal(Literal {
+                            content: TokenContentType::String(format!("{}{}", s, other_s)),
+                        }),
+                        _ => panic!(
+                            "Expected string literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected string literal but got {:?}", other),
+                },
+                _ => panic!(
+                    "Expected number or string literal but got {:?}",
+                    literal.content
+                ),
+            },
+            _ => panic!("Expected number or string literal but got {:?}", self),
+        }
+    }
+}
+
+impl Sub for Ast {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        // support strings and numbers
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => Ast::Literal(Literal {
+                            content: TokenContentType::Number(n - other_n),
+                        }),
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                _ => panic!(
+                    "Expected number or string literal but got {:?}",
+                    literal.content
+                ),
+            },
+            _ => panic!("Expected number or string literal but got {:?}", self),
+        }
+    }
+}
+
+impl Mul for Ast {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self::Output {
+        // support strings and numbers
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => Ast::Literal(Literal {
+                            content: TokenContentType::Number(n * other_n),
+                        }),
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                TokenContentType::String(s) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => {
+                            if other_n.fract() != 0.0 {
+                                panic!("Cannot multiply string by non-integer number")
+                            }
+                            if other_n < 0.0 {
+                                panic!("Cannot multiply string by negative number")
+                            }
+                            let mut result = String::new();
+                            for _ in 0..(other_n as u64) {
+                                result.push_str(&s);
+                            }
+                            Ast::Literal(Literal {
+                                content: TokenContentType::String(result),
+                            })
+                        }
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                _ => panic!(
+                    "Expected number or string literal but got {:?}",
+                    literal.content
+                ),
+            },
+            _ => panic!("Expected number or string literal but got {:?}", self),
+        }
+    }
+}
+
+impl Div for Ast {
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self::Output {
+        // support strings and numbers
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => {
+                            if other_n == 0.0 {
+                                panic!("Cannot divide by zero")
+                            }
+                            Ast::Literal(Literal {
+                                content: TokenContentType::Number(n / other_n),
+                            })
+                        }
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                _ => panic!(
+                    "Expected number or string literal but got {:?}",
+                    literal.content
+                ),
+            },
+            _ => panic!("Expected number or string literal but got {:?}", self),
+        }
+    }
+}
+
+impl Rem for Ast {
+    type Output = Self;
+
+    fn rem(self, other: Self) -> Self::Output {
+        // support strings and numbers
+        match self {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => {
+                            if other_n == 0.0 {
+                                panic!("Cannot get remainder by zero")
+                            }
+                            Ast::Literal(Literal {
+                                content: TokenContentType::Number(n % other_n),
+                            })
+                        }
+                        _ => panic!(
+                            "Expected number literal but got {:?}",
+                            other_literal.content
+                        ),
+                    },
+                    _ => panic!("Expected number literal but got {:?}", other),
+                },
+                _ => panic!(
+                    "Expected number or string literal but got {:?}",
+                    literal.content
+                ),
+            },
+            _ => panic!("Expected number or string literal but got {:?}", self),
+        }
+    }
+}
+
+impl PartialEq for Ast {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Ast::Literal(literal) => match literal.content.clone() {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => n == other_n,
+                        _ => false,
+                    },
+                    _ => false,
+                },
+                TokenContentType::String(s) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content.clone() {
+                        TokenContentType::String(other_s) => s == other_s,
+                        _ => false,
+                    },
+                    _ => false,
+                },
+                TokenContentType::Boolean(b) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Boolean(other_b) => b == other_b,
+                        _ => false,
+                    },
+                    _ => false,
+                },
+            },
+            Ast::Var(_name, value) => match other {
+                Ast::Var(_other_name, other_value) => value == other_value,
+                _ => false,
+            },
+            Ast::Array(array) => match other {
+                Ast::Array(other_array) => &array.content == &other_array.content,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
+impl PartialOrd for Ast {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self {
+            Ast::Literal(literal) => match literal.content.clone() {
+                TokenContentType::Number(n) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Number(other_n) => n.partial_cmp(&other_n),
+                        _ => None,
+                    },
+                    _ => None,
+                },
+                TokenContentType::String(s) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content.clone() {
+                        TokenContentType::String(other_s) => s.partial_cmp(&other_s),
+                        _ => None,
+                    },
+                    _ => None,
+                },
+                TokenContentType::Boolean(b) => match other {
+                    Ast::Literal(other_literal) => match other_literal.content {
+                        TokenContentType::Boolean(other_b) => b.partial_cmp(&other_b),
+                        _ => None,
+                    },
+                    _ => None,
+                },
+            },
+            Ast::Var(_name, value) => match other {
+                Ast::Var(_other_name, other_value) => value.partial_cmp(&other_value),
+                _ => None,
+            },
+            Ast::Array(array) => match other {
+                Ast::Array(other_array) => (&array.content).partial_cmp(&other_array.content),
+                _ => None,
+            },
+            _ => None,
         }
     }
 }
