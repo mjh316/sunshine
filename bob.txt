@@ -7,20 +7,21 @@ let name = "Justin"
 
 sketch seed needs (s) {
     let other = "world"
-    print(s + " " + other)
+    ~print(s + " " + other)
 }
 
 seed("hello")
+~print(other)
 
-print(a)
+~print(a)
 while (i < 10) {
     let tmp = b
     let b = a + b
     let a = tmp
-    print((name + " ") * 5)
+    ~print((name + " ") * 5)
     print(a)
-    print(b)
+    ~print(b)
     let i = i + 1
 }
 
-~ print("BOB")
+~ ~print("BOB")

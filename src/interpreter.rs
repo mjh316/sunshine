@@ -108,16 +108,21 @@ impl Interpreter {
         structScope: StructScope,
     ) -> (Scope, Option<Ast>) {
         let mut retScope = scope.clone();
+        // println!("scope in run: {:?}", retScope.clone());
+        // println!("nodes: {:?}", ast.clone());
         for node in ast {
             // println!("running node {:?}", node);
-            // // println!("calling execute from run");
+            // println!("calling execute from run");
             let (newScope, _ret) = Interpreter::execute(
                 node,
                 retScope.clone(),
                 functionScope.clone(),
                 structScope.clone(),
             );
+
+            // println!();
             // println!("new scope: {:?}", newScope.clone());
+            // println!();
             // println!("ret: {:?}", _ret.clone());
             retScope = newScope;
             match _ret {
@@ -163,6 +168,9 @@ impl Interpreter {
                 let borrowed_scope = functionScope.borrow();
                 let iter = borrowed_scope.keys();
                 // println!("iter: {:#?}", iter);
+                // println!("scope: {:#?}", scope.borrow_mut().keys());
+                // println!("node: {:#?}", name);
+                // println!("functionscope: {:#?}", iter.clone().collect::<Vec<_>>());
                 if !Interpreter::inScope(scope.clone(), name.clone())
                     && !iter.clone().any(|x| x == &name)
                 {
@@ -357,7 +365,7 @@ impl Interpreter {
                         if !Interpreter::isFuncInScope(functionScopeCopy.clone(), name.clone()) {
                             panic!("Function {} not found in scope", name);
                         } else {
-                            let mut functionScopeMap = functionScope.borrow();
+                            let functionScopeMap = functionScope.borrow();
                             let function = functionScopeMap
                                 .get(&name)
                                 .expect(format!("Function {} not found in scope", name).as_str());
@@ -521,7 +529,12 @@ impl Interpreter {
 
                 let function = Box::new(move |args: Vec<Ast>| {
                     // println!("function args: {:?}", args);
+                    // println!("ENTERING function");
+                    // let localScope = Rc::new(RefCell::new(HashMap::new()));
                     let localScope = valueScope.clone();
+                    // for (key, value) in valueScope.borrow().iter() {
+                    //     localScope.borrow_mut().insert(key.clone(), value.clone());
+                    // }
                     // println!("function params: {:?}", params);
                     // println!("function args: {:?}", args);
                     for (i, param) in params.iter().enumerate() {
@@ -532,6 +545,7 @@ impl Interpreter {
 
                     let functionScope = Rc::clone(&functionScope);
 
+                    // println!("localscope: {:?}", localScope);
                     // println!("function body: {:?}", functionBody.clone());
 
                     let result = Interpreter::run(
@@ -543,13 +557,15 @@ impl Interpreter {
 
                     // println!("function result: {:?}", result);
 
+                    // println!("EXITING function");
+
                     match result.1 {
                         Some(value) => value,
                         None => Ast::None,
                     }
                 });
 
-                retFunctionScope.borrow_mut().insert(name, function);
+                retFunctionScope.borrow_mut().insert(name.clone(), function);
             }
             Ast::Return(value) => {
                 let value = Interpreter::evaluate(
@@ -762,15 +778,15 @@ impl Interpreter {
             }
 
             _ => {
-                return (
+                // println!("running node {:?}", node);
+                let result = Interpreter::evaluate(
+                    Box::new(node.clone()),
                     retScope.clone(),
-                    Some(Interpreter::evaluate(
-                        Box::new(node),
-                        retScope.clone(),
-                        retFunctionScope.clone(),
-                        retStructScope.clone(),
-                    )),
+                    retFunctionScope.clone(),
+                    retStructScope.clone(),
                 );
+                // println!("result: {:?}", result);
+                return (retScope.clone(), Some(result));
             }
         }
         (retScope, retValue)
