@@ -1,8 +1,18 @@
-struct Cell has {x, y}
+struct Cell has {x, y, arr}
 
 let cell = prep Cell(x: 2, y: 3)
 
 print(cell)
+
+let arr = [2, 3, 1, 4, 9, 3]
+arr.sort()
+~arr.reverse()
+
+print(arr)
+
+arr.pop()
+
+print(arr)
 
 let i = 0
 let sum = 0

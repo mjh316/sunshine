@@ -376,7 +376,7 @@ impl Interpreter {
                 let functionScopeCopy = functionScope.clone();
 
                 match caller {
-                    Ast::Func(name, callers, body) => {
+                    Ast::Func(name, callers, mut body) => {
                         // println!("function name: {:?}", name);
                         // println!("function args: {:?}", args);
                         // println!("function body: {:?}", body);
@@ -395,7 +395,7 @@ impl Interpreter {
                             // this is unreal
                             if name.starts_with("STDLIB_ARRAY") {
                                 // println!("args: {:?}", args);
-                                let array = body.get(0).unwrap().clone();
+                                let array = body.get_mut(0).unwrap();
                                 // args.insert(0, array);
                                 /**
                                  * TODO: figure out how to get this working for array fields of structs
@@ -447,7 +447,7 @@ impl Interpreter {
                                             _ => {}
                                         }
 
-                                        return Ast::Array(array);
+                                        return Ast::Array(array.clone());
                                     }
                                     "STDLIB_ARRAY_POP" => {
                                         if args.len() != 0 {
@@ -462,26 +462,143 @@ impl Interpreter {
                                                 array
                                             );
                                         }
-                                        let mut array = match array {
-                                            Ast::Array(array) => array,
+                                        let mut actualArray: &mut Array = match array {
+                                            Ast::Array(_arr) => _arr,
                                             _ => panic!(
                                                 "Expected array as first argument, got {:?}",
                                                 array
                                             ),
                                         };
-                                        array.content.pop();
+                                        // array.content.pop();
+                                        actualArray.content.pop();
 
                                         match &callers[..] {
                                             [name] => {
                                                 scope.borrow_mut().insert(
                                                     name.clone(),
-                                                    Ast::Array(array.clone()),
+                                                    Ast::Array(actualArray.clone()),
                                                 );
                                             }
                                             _ => {}
                                         }
 
-                                        return Ast::Array(array);
+                                        return Ast::Array(actualArray.clone());
+                                    }
+                                    "STDLIB_ARRAY_REVERSE" => {
+                                        if args.len() != 0 {
+                                            panic!("Expected 0 arguments, got {:?}", args.len());
+                                        }
+
+                                        // println!("STDLIB_ARRAY_REVERSE args: {:?}", args);
+
+                                        if !matches!(array, Ast::Array(_)) {
+                                            panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            );
+                                        }
+                                        let mut actualArray: &mut Array = match array {
+                                            Ast::Array(_arr) => _arr,
+                                            _ => panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            ),
+                                        };
+                                        actualArray.content.reverse();
+
+                                        match &callers[..] {
+                                            [name] => {
+                                                scope.borrow_mut().insert(
+                                                    name.clone(),
+                                                    Ast::Array(actualArray.clone()),
+                                                );
+                                            }
+                                            _ => {}
+                                        }
+
+                                        return Ast::Array(actualArray.clone());
+                                    }
+                                    "STDLIB_ARRAY_SORT" => {
+                                        if args.len() != 0 {
+                                            panic!("Expected 0 arguments, got {:?}", args.len());
+                                        }
+
+                                        // println!("STDLIB_ARRAY_SORT args: {:?}", args);
+
+                                        if !matches!(array, Ast::Array(_)) {
+                                            panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            );
+                                        }
+                                        let mut actualArray: &mut Array = match array {
+                                            Ast::Array(_arr) => _arr,
+                                            _ => panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            ),
+                                        };
+
+                                        let underLyingArray = actualArray.content.clone();
+                                        if underLyingArray.len() == 0 {
+                                            return Ast::Array(actualArray.clone());
+                                        }
+
+                                        // sort the array, but fits check they all have the same tokencontenttype
+                                        // convert from tokencontenttype to primitive
+                                        // then convert back
+                                        let mut sortedArray = underLyingArray.clone();
+                                        sortedArray.sort_by(|a, b| {
+                                            let ab = match a {
+                                                Ast::Literal(Literal {
+                                                    content: TokenContentType::Number(a),
+                                                }) => Some(a),
+                                                _ => None,
+                                            };
+                                            let bb = match b {
+                                                Ast::Literal(Literal {
+                                                    content: TokenContentType::Number(b),
+                                                }) => Some(b),
+                                                _ => None,
+                                            };
+                                            if ab.is_some() && bb.is_some() {
+                                                return ab
+                                                    .unwrap()
+                                                    .partial_cmp(&bb.unwrap())
+                                                    .unwrap();
+                                            }
+
+                                            let a = match a {
+                                                Ast::Literal(Literal {
+                                                    content: TokenContentType::String(abs),
+                                                }) => Some(abs),
+                                                _ => None,
+                                            };
+                                            let b = match b {
+                                                Ast::Literal(Literal {
+                                                    content: TokenContentType::String(b),
+                                                }) => Some(b),
+                                                _ => None,
+                                            };
+                                            if a.is_some() && b.is_some() {
+                                                return a.partial_cmp(&b).unwrap();
+                                            }
+                                            panic!("Expected uniform array of either all numbers, or all strings")
+                                        });
+
+                                        actualArray.content = sortedArray;
+
+                                        match &callers[..] {
+                                            [name] => {
+                                                scope.borrow_mut().insert(
+                                                    name.clone(),
+                                                    Ast::Array(actualArray.clone()),
+                                                );
+                                            }
+                                            _ => {}
+                                        }
+
+                                        return Ast::Array(actualArray.clone());
                                     }
                                     _ => {
                                         panic!("Function {} not found in scope", name);
@@ -501,7 +618,7 @@ impl Interpreter {
             Ast::Get(caller_ast, property_ast, is_expr) => {
                 let orig_caller = caller_ast.clone();
                 // Evaluate the caller
-                let caller = Interpreter::evaluate(
+                let mut caller = Interpreter::evaluate(
                     caller_ast,
                     scope.clone(),
                     functionScope.clone(),
@@ -522,7 +639,7 @@ impl Interpreter {
                     *property_ast
                 };
 
-                match caller {
+                match &mut caller {
                     Ast::Array(array) => match property.clone() {
                         Ast::Literal(Literal {
                             content: TokenContentType::Number(_),
@@ -563,8 +680,8 @@ impl Interpreter {
                                  */
                                 // println!("pushing to array");
                                 // println!(
-                                //     "caller, property, isExpr: {:?}, {:?}, {:?}",
-                                //     array, property, is_expr
+                                //     "origCaller, caller, property, isExpr: {:?}, {:?}, {:?}, {:?}",
+                                //     orig_caller, array, property, is_expr
                                 // );
 
                                 let variableVec = if matches!(*orig_caller, Ast::Var(_, _)) {
@@ -579,7 +696,57 @@ impl Interpreter {
                                 return Ast::Func(
                                     "STDLIB_ARRAY_PUSH".to_string(),
                                     variableVec,
-                                    vec![Ast::Array(array)],
+                                    vec![caller],
+                                );
+                            }
+                            "pop" => {
+                                let variableVec = if matches!(*orig_caller, Ast::Var(_, _)) {
+                                    let name = match *orig_caller {
+                                        Ast::Var(name, _) => name,
+                                        _ => panic!("Expected variable but got {:?}", orig_caller),
+                                    };
+                                    vec![name]
+                                } else {
+                                    vec![]
+                                };
+                                return Ast::Func(
+                                    "STDLIB_ARRAY_POP".to_string(),
+                                    variableVec,
+                                    vec![caller],
+                                );
+                            }
+                            "reverse" => {
+                                let variableVec = if matches!(*orig_caller, Ast::Var(_, _)) {
+                                    let name = match *orig_caller {
+                                        Ast::Var(name, _) => name,
+                                        _ => panic!("Expected variable but got {:?}", orig_caller),
+                                    };
+                                    vec![name]
+                                } else {
+                                    vec![]
+                                };
+
+                                return Ast::Func(
+                                    "STDLIB_ARRAY_REVERSE".to_string(),
+                                    variableVec,
+                                    vec![caller],
+                                );
+                            }
+                            "sort" => {
+                                let variableVec = if matches!(*orig_caller, Ast::Var(_, _)) {
+                                    let name = match *orig_caller {
+                                        Ast::Var(name, _) => name,
+                                        _ => panic!("Expected variable but got {:?}", orig_caller),
+                                    };
+                                    vec![name]
+                                } else {
+                                    vec![]
+                                };
+
+                                return Ast::Func(
+                                    "STDLIB_ARRAY_SORT".to_string(),
+                                    variableVec,
+                                    vec![caller],
                                 );
                             }
                             _ => {
@@ -605,7 +772,7 @@ impl Interpreter {
                         if !Interpreter::inScope(scope.clone(), name.clone()) {
                             panic!("Variable {} not found in scope", name);
                         }
-                        let value = scope.borrow_mut().get(&name).unwrap().clone();
+                        let value = scope.borrow_mut().get(name.as_str()).unwrap().clone();
                         match value {
                             Ast::Instance(_, _) => {
                                 let instance = value;

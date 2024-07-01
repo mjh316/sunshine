@@ -8,6 +8,7 @@ use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
 
 use ast::{Array, Ast, Literal};
 use interpreter::Interpreter;
+use lexer::TokenContentType;
 
 // use interpreter::Interpreter;
 
@@ -138,6 +139,73 @@ fn main() {
                         Some(Ast::Array(array)) => {
                             let mut array = array.clone();
                             array.content.pop();
+                            Ast::Array(array)
+                        }
+                        _ => panic!("Expected array as first argument"),
+                    };
+                }),
+            );
+
+            // reverse
+            standardLibraryFunctions.borrow_mut().insert(
+                "STDLIB_ARRAY_REVERSE".to_string(),
+                Box::new(move |args| {
+                    // println!("ARGS IN ARRAY REVERSE {:?}", args);
+
+                    return match args.get(0) {
+                        Some(Ast::Array(array)) => {
+                            let mut array = array.clone();
+                            array.content.reverse();
+                            Ast::Array(array)
+                        }
+                        _ => panic!("Expected array as first argument"),
+                    };
+                }),
+            );
+
+            // sort
+            standardLibraryFunctions.borrow_mut().insert(
+                "STDLIB_ARRAY_SORT".to_string(),
+                Box::new(move |args| {
+                    // println!("ARGS IN ARRAY SORT {:?}", args);
+
+                    return match args.get(0) {
+                        Some(Ast::Array(array)) => {
+                            let mut array = array.clone();
+                            array.content.sort_by(|a, b| {
+                                let ab = match a {
+                                    Ast::Literal(Literal {
+                                        content: TokenContentType::Number(a),
+                                    }) => Some(a),
+                                    _ => None,
+                                };
+                                let bb = match b {
+                                    Ast::Literal(Literal {
+                                        content: TokenContentType::Number(b),
+                                    }) => Some(b),
+                                    _ => None,
+                                };
+                                if ab.is_some() && bb.is_some() {
+                                    return ab.unwrap().partial_cmp(&bb.unwrap()).unwrap();
+                                }
+
+                                let a = match a {
+                                    Ast::Literal(Literal {
+                                        content: TokenContentType::String(abs),
+                                    }) => Some(abs),
+                                    _ => None,
+                                };
+                                let b = match b {
+                                    Ast::Literal(Literal {
+                                        content: TokenContentType::String(b),
+                                    }) => Some(b),
+                                    _ => None,
+                                };
+                                if a.is_some() && b.is_some() {
+                                    return a.partial_cmp(&b).unwrap();
+                                }
+                                panic!("Expected number or string as array elements!")
+                            });
                             Ast::Array(array)
                         }
                         _ => panic!("Expected array as first argument"),

@@ -423,6 +423,13 @@ impl Parser {
             self.eatKeyword("=");
             let value = self.expr();
             return Ast::Set(name, property, Box::new(value.clone()));
+        } else if matches!(self.peekType().unwrap(), TokenType::LeftBracket) {
+            self.eat(TokenType::LeftBracket);
+            let index = self.expr();
+            self.eat(TokenType::RightBracket);
+            self.eatKeyword("=");
+            let value = self.expr();
+            return Ast::Set(name, index.into(), Box::new(value.clone()));
         }
 
         self.eatKeyword("=");
