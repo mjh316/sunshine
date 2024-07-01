@@ -12,9 +12,14 @@ let name = "Justin"
 
 ~seed("hello")
 
-let input1 = input()
+~let input1 = input()
 
-print(input1*100)
+~print(input1*100)
+
+let arr = [2, 4, "hello"]
+arr.push(1000002)
+print(arr.length)
+print(arr)
 
 ~print(other)
 
@@ -24,9 +29,9 @@ while (i < 10) {
     let b = a + b
     let a = tmp
     ~print((name + " ") * 5)
-    print(a)
+    ~print(a)
     ~print(b)
     let i = i + 1
 }
 
-~ ~print("BOB")
+~ print("BOB")

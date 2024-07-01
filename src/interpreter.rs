@@ -95,6 +95,21 @@ impl Interpreter {
                     structScope.clone(),
                 );
             }
+            Ast::Get(caller, property, isExpr) => {
+                let result = Interpreter::evaluate(
+                    Box::new(Ast::Get(caller, property, isExpr)),
+                    scope.clone(),
+                    functionScope.clone(),
+                    structScope.clone(),
+                );
+
+                return Interpreter::toPrint(
+                    result,
+                    scope.clone(),
+                    functionScope.clone(),
+                    structScope.clone(),
+                );
+            }
             _ => {
                 panic!("Expected expression but got statement {:?}", ast);
             }
@@ -348,7 +363,8 @@ impl Interpreter {
                 }
                 return Ast::Instance(name, fields);
             }
-            Ast::Call(caller, args) => {
+            Ast::Call(caller, mut args) => {
+                // println!("CALLER: {:?}", caller);
                 let caller = Interpreter::evaluate(
                     caller,
                     scope.clone(),
@@ -360,8 +376,14 @@ impl Interpreter {
                 let functionScopeCopy = functionScope.clone();
 
                 match caller {
-                    Ast::Func(name, _, _) => {
+                    Ast::Func(name, callers, body) => {
                         // println!("function name: {:?}", name);
+                        // println!("function args: {:?}", args);
+                        // println!("function body: {:?}", body);
+                        // println!(
+                        //     "{:?}",
+                        //     functionScopeCopy.borrow().keys().collect::<Vec<_>>()
+                        // );
                         if !Interpreter::isFuncInScope(functionScopeCopy.clone(), name.clone()) {
                             panic!("Function {} not found in scope", name);
                         } else {
@@ -369,6 +391,67 @@ impl Interpreter {
                             let function = functionScopeMap
                                 .get(&name)
                                 .expect(format!("Function {} not found in scope", name).as_str());
+
+                            // this is unreal
+                            if name.starts_with("STDLIB_ARRAY") {
+                                // println!("args: {:?}", args);
+                                let array = body.get(0).unwrap().clone();
+                                // args.insert(0, array);
+                                match name.as_str() {
+                                    "STDLIB_ARRAY_PUSH" => {
+                                        if args.len() != 1 {
+                                            panic!("Expected 1 argument, got {:?}", args.len());
+                                        }
+
+                                        // println!("STDLIB_ARRAY_PUSH args: {:?}", args);
+
+                                        let newElement = args.get(0).unwrap().clone();
+                                        if !matches!(array, Ast::Array(_)) {
+                                            panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            );
+                                        }
+                                        if !matches!(newElement, Ast::Literal(_)) {
+                                            panic!(
+                                                "Expected literal as second argument, got {:?}",
+                                                newElement
+                                            );
+                                        }
+                                        let mut array = match array {
+                                            Ast::Array(array) => array,
+                                            _ => panic!(
+                                                "Expected array as first argument, got {:?}",
+                                                array
+                                            ),
+                                        };
+                                        let value = match newElement {
+                                            Ast::Literal(literal) => literal,
+                                            _ => panic!(
+                                                "Expected literal as second argument, got {:?}",
+                                                newElement
+                                            ),
+                                        };
+                                        array.content.push(Ast::Literal(value));
+
+                                        match &callers[..] {
+                                            [name] => {
+                                                scope.borrow_mut().insert(
+                                                    name.clone(),
+                                                    Ast::Array(array.clone()),
+                                                );
+                                            }
+                                            _ => {}
+                                        }
+
+                                        return Ast::Array(array);
+                                    }
+                                    _ => {
+                                        panic!("Function {} not found in scope", name);
+                                    }
+                                }
+                            }
+
                             // println!("found function YEET {}", name);
                             return function(args);
                         }
@@ -379,6 +462,7 @@ impl Interpreter {
                 }
             }
             Ast::Get(caller_ast, property_ast, is_expr) => {
+                let orig_caller = caller_ast.clone();
                 // Evaluate the caller
                 let caller = Interpreter::evaluate(
                     caller_ast,
@@ -386,6 +470,8 @@ impl Interpreter {
                     functionScope.clone(),
                     structScope.clone(),
                 );
+
+                // println!("get caller: {:?}", caller);
 
                 // Determine the property
                 let property = if is_expr {
@@ -400,24 +486,71 @@ impl Interpreter {
                 };
 
                 match caller {
-                    Ast::Array(array) => {
-                        if !matches!(
-                            property,
-                            Ast::Literal(Literal {
-                                content: TokenContentType::Number(_)
-                            })
-                        ) {
-                            panic!("Expected number as index, got {:?}", property);
+                    Ast::Array(array) => match property.clone() {
+                        Ast::Literal(Literal {
+                            content: TokenContentType::Number(_),
+                        }) => {
+                            if let Ast::Literal(Literal {
+                                content: TokenContentType::Number(n),
+                            }) = property
+                            {
+                                return array.content.get(n as usize).unwrap().clone();
+                            } else {
+                                panic!("Expected number as index, got {:?}", property);
+                            }
                         }
-                        if let Ast::Literal(Literal {
-                            content: TokenContentType::Number(n),
-                        }) = property
-                        {
-                            return array.content.get(n as usize).unwrap().clone();
-                        } else {
-                            panic!("Expected number as index, got {:?}", property);
-                        }
-                    }
+                        Ast::Literal(Literal {
+                            content: TokenContentType::String(s),
+                        }) => match s.as_str() {
+                            // string standard library
+                            "length" => {
+                                return Ast::Literal(Literal {
+                                    content: TokenContentType::Number(array.content.len() as f64),
+                                });
+                            }
+                            "push" => {
+                                /*
+                                 * NOTE:
+                                 *
+                                 * essentially how this works is that the Ast::Func has three parts
+                                 * name, params, and body
+                                 *
+                                 * because we don't have a way to define functions on arrays, we are instead manually doing it by
+                                 * creating a standard library function that takes in an array and a value and pushes the value to the array
+                                 *
+                                 * we don't have a way to get this array to the function arguments, so we are instead returning the array itself
+                                 * as part of the "body" arguments to be called when the functions is ran (not the actual body)
+                                 *
+                                 * so when calling, the interpreter checks if its an array function, and if it is, it will insert the array into the arguments
+                                 *
+                                 */
+                                // println!("pushing to array");
+                                // println!(
+                                //     "caller, property, isExpr: {:?}, {:?}, {:?}",
+                                //     array, property, is_expr
+                                // );
+
+                                let variableVec = if matches!(*orig_caller, Ast::Var(_, _)) {
+                                    let name = match *orig_caller {
+                                        Ast::Var(name, _) => name,
+                                        _ => panic!("Expected variable but got {:?}", orig_caller),
+                                    };
+                                    vec![name]
+                                } else {
+                                    vec![]
+                                };
+                                return Ast::Func(
+                                    "STDLIB_ARRAY_PUSH".to_string(),
+                                    variableVec,
+                                    vec![Ast::Array(array)],
+                                );
+                            }
+                            _ => {
+                                panic!("Property {} not found in array", s);
+                            }
+                        },
+                        _ => panic!("Expected number as index, got {:?}", property),
+                    },
                     Ast::Instance(name, members) => {
                         let propertyKey = match property {
                             Ast::Literal(Literal {

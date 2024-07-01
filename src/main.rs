@@ -6,7 +6,7 @@ mod stdlib;
 
 use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
 
-use ast::{Ast, Literal};
+use ast::{Array, Ast, Literal};
 use interpreter::Interpreter;
 
 // use interpreter::Interpreter;
@@ -109,6 +109,23 @@ fn main() {
                     Ast::Literal(Literal {
                         content: input.trim().to_string().into(),
                     })
+                }),
+            );
+
+            // array functions
+            standardLibraryFunctions.borrow_mut().insert(
+                "STDLIB_ARRAY_PUSH".to_string(),
+                Box::new(move |args| {
+                    // println!("ARGS IN ARRAY PUSH {:?}", args);
+
+                    return match args.get(0) {
+                        Some(Ast::Array(array)) => {
+                            let mut array = array.clone();
+                            array.content.push(args.get(1).unwrap().clone());
+                            Ast::Array(array)
+                        }
+                        _ => panic!("Expected array as first argument"),
+                    };
                 }),
             );
 
