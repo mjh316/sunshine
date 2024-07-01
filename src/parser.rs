@@ -286,7 +286,7 @@ impl Parser {
     }
 
     fn funcStmt(&mut self) -> Ast {
-        self.eatKeyword("sketch");
+        self.eatKeyword("func");
         let name = self.eat(TokenType::Identifier).value;
 
         let mut params = vec![];
@@ -443,7 +443,7 @@ impl Parser {
         match next {
             Some(token) => match token._type {
                 TokenType::Keyword => match token.value.as_str() {
-                    "sketch" => {
+                    "func" => {
                         return self.funcStmt();
                     }
                     "finished" => {

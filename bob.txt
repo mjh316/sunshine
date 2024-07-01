@@ -5,7 +5,7 @@ let a = 1
 let b = 1
 let name = "Justin"
 
-sketch seed needs (s) {
+func seed needs (s) {
     let other = "world"
     ~print(s + " " + other)
 }
