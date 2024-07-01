@@ -522,6 +522,8 @@ impl Interpreter {
                 let function = Box::new(move |args: Vec<Ast>| {
                     // println!("function args: {:?}", args);
                     let localScope = valueScope.clone();
+                    // println!("function params: {:?}", params);
+                    // println!("function args: {:?}", args);
                     for (i, param) in params.iter().enumerate() {
                         localScope
                             .borrow_mut()

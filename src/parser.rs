@@ -297,6 +297,7 @@ impl Parser {
             self.eatKeyword("needs");
             self.eat(TokenType::LeftParen);
             params = self.identifierList();
+            // println!("params: {:?}", params);
             // println!("RIGHTPAREN 4");
             self.eat(TokenType::RightParen);
         }

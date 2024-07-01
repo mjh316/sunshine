@@ -5,11 +5,12 @@ let a = 1
 let b = 1
 let name = "Justin"
 
-sketch seed {
-    print("loser")
+sketch seed needs (s) {
+    let other = "world"
+    print(s + " " + other)
 }
 
-seed()
+seed("hello")
 
 print(a)
 while (i < 10) {
