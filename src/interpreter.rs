@@ -3,6 +3,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     rc::Rc,
+    string,
 };
 
 use crate::{
@@ -18,6 +19,79 @@ type StructScope = Rc<RefCell<HashMap<String, HashMap<String, Ast>>>>; // this o
                                                                        // those go in the scope
 
 impl Interpreter {
+    pub fn toPrint(
+        ast: Ast,
+        scope: Scope,
+        functionScope: FunctionScope,
+        structScope: StructScope,
+    ) -> String {
+        match ast {
+            Ast::Literal(literal) => match literal.content {
+                TokenContentType::String(s) => s,
+                TokenContentType::Number(n) => n.to_string(),
+                TokenContentType::Boolean(b) => b.to_string(),
+            },
+            Ast::Var(name, _) => {
+                if !Interpreter::inScope(scope.clone(), name.clone())
+                    && !Interpreter::isFuncInScope(functionScope.clone(), name.clone())
+                {
+                    panic!("Variable {} not found in scope", name);
+                }
+                if Interpreter::inScope(scope.clone(), name.clone()) {
+                    return Interpreter::toPrint(
+                        scope.borrow_mut().get(&name).unwrap().clone(),
+                        scope.clone(),
+                        functionScope.clone(),
+                        structScope.clone(),
+                    );
+                } else if Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
+                    return format!("function {}", name);
+                } else {
+                    panic!("Variable {} not found in scope", name);
+                }
+            }
+            Ast::Array(array) => {
+                let mut result = "[".to_string();
+                for (i, item) in array.content.iter().enumerate() {
+                    result.push_str(&Interpreter::toPrint(
+                        item.clone(),
+                        scope.clone(),
+                        functionScope.clone(),
+                        structScope.clone(),
+                    ));
+                    if i != array.content.len() - 1 {
+                        result.push_str(", ");
+                    }
+                }
+                result.push_str("]");
+                return result;
+            }
+            Ast::Instance(name, members) => {
+                let mut result = format!("{} {{", name);
+                for (i, (field, value)) in members.iter().enumerate() {
+                    result.push_str(&format!(
+                        "{}: {}",
+                        field,
+                        Interpreter::toPrint(
+                            value.clone(),
+                            scope.clone(),
+                            functionScope.clone(),
+                            structScope.clone(),
+                        )
+                    ));
+                    if i != members.len() - 1 {
+                        result.push_str(", ");
+                    }
+                }
+                result.push_str("}");
+                return result;
+            }
+            _ => {
+                panic!("Expected expression but got statement {:?}", ast);
+            }
+        }
+    }
+
     pub fn run(
         ast: Vec<Ast>,
         scope: Scope,
@@ -26,15 +100,25 @@ impl Interpreter {
     ) -> (Scope, Option<Ast>) {
         let mut retScope = scope.clone();
         for node in ast {
+            // println!("running node {:?}", node);
+            // println!("calling execute from run");
             let (newScope, _ret) = Interpreter::execute(
                 node,
                 retScope.clone(),
                 functionScope.clone(),
                 structScope.clone(),
             );
+            // println!("new scope: {:?}", newScope.clone());
+            // println!("ret: {:?}", _ret.clone());
             retScope = newScope;
-            if _ret.is_some() {
-                return (retScope, _ret);
+            match _ret {
+                Some(ret) => match ret {
+                    Ast::Return(value) => {
+                        return (retScope, Some(*value));
+                    }
+                    _ => {}
+                },
+                None => {}
             }
             // if ret.is_some() {
             //     return ret;
@@ -61,12 +145,22 @@ impl Interpreter {
         functionScope: FunctionScope,
         structScope: StructScope,
     ) -> Ast {
+        // println!("evaluating {:?}", value);
         match *value {
             Ast::Var(name, _) => {
-                if !Interpreter::inScope(scope.clone(), name.clone()) {
+                if !Interpreter::inScope(scope.clone(), name.clone())
+                    && !Interpreter::isFuncInScope(functionScope.clone(), name.clone())
+                {
                     panic!("Variable {} not found in scope", name);
                 }
-                return scope.borrow_mut().get(&name).unwrap().clone();
+                if Interpreter::inScope(scope.clone(), name.clone()) {
+                    return scope.borrow_mut().get(&name).unwrap().clone();
+                } else if Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
+                    // println!("found function {}", name);
+                    return Ast::Func(name, vec![], vec![]);
+                } else {
+                    panic!("Variable {} not found in scope", name);
+                }
             }
             Ast::Unary(operator, value) => {
                 let value = Interpreter::evaluate(
@@ -178,11 +272,16 @@ impl Interpreter {
                     structScope.clone(),
                 );
 
+                // println!("left: {:?}, op: {:?}, right: {:?}", left, op, right);
+
                 if !operations.contains_key(&op) {
                     panic!("Unknown binary operator {:?}", op);
                 }
 
-                return operations.get(&op).unwrap()(left, right);
+                let resultOfOp = operations.get(&op).unwrap()(left, right);
+                // println!("result of op: {:?}", resultOfOp);
+
+                return resultOfOp;
             }
             Ast::Literal(literal) => Ast::Literal(literal),
             Ast::Array(array) => Ast::Array(Array {
@@ -234,11 +333,14 @@ impl Interpreter {
                     structScope.clone(),
                 );
 
+                // println!("function caller: {:?}", caller);
+
                 match caller {
                     Ast::Func(name, _, _) => {
                         if !Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
                             panic!("Function {} not found in scope", name);
                         } else {
+                            // println!("found function {}", name);
                             let mut functionScopeMap = functionScope.borrow_mut();
                             let function = functionScopeMap
                                 .get_mut(&name)
@@ -359,6 +461,7 @@ impl Interpreter {
         _functionScope: FunctionScope,
         _structScope: StructScope,
     ) -> (Scope, Option<Ast>) {
+        // println!("executing {:?}", node);
         let mut retValue = None;
         let mut retScope = _scope.clone();
         let mut retFunctionScope = _functionScope.clone();
@@ -434,13 +537,33 @@ impl Interpreter {
                 return (retScope, retValue);
             }
             Ast::While(condition, body) => loop {
+                // println!("STARTING WHILE LOOP!");
                 loop {
+                    // println!("condition {:?}", condition);
+                    // println!("calling execute from while loop");
+                    if !matches!(
+                        Interpreter::evaluate(
+                            condition.clone(),
+                            retScope.clone(),
+                            retFunctionScope.clone(),
+                            retStructScope.clone(),
+                        ),
+                        Ast::Literal(Literal {
+                            content: TokenContentType::Boolean(true)
+                        })
+                    ) {
+                        // println!("BREAKING WHILE LOOP!");
+                        break;
+                    }
+
+                    // println!("{:?}", format!("condition {:?}", condition));
                     let result = Interpreter::execute(
                         *condition.clone(),
                         retScope.clone(),
                         retFunctionScope.clone(),
                         retStructScope.clone(),
                     );
+                    // println!("result in while {:?}", result);
                     let condition = result.1.unwrap();
                     match condition {
                         Ast::Literal(Literal {
@@ -464,37 +587,7 @@ impl Interpreter {
                         }
                     }
                 }
-                // let condition = Interpreter::evaluate(
-                //     condition.clone(),
-                //     retScope.clone(),
-                //     retFunctionScope.clone(), retStructScope.clone(),
-                // );
-                // if matches!(
-                //     condition,
-                //     Ast::Literal(Literal {
-                //         content: TokenContentType::Boolean(false)
-                //     })
-                // ) {
-                //     break;
-                // }
-                // // if condition == Ast::Literal(Literal {
-                // //     content: TokenContentType::Boolean(false),
-                // // }) {
-                // //     break;
-                // // }
-                // for statement in body.clone() {
-                //     let (newScope, ret) =
-                //         Interpreter::execute(statement, retScope.clone(), retFunctionScope.clone(), retStructScope.clone());
-                //     retScope = newScope;
-                //     if ret.is_some_and(|x| match x {
-                //         Ast::Literal(Literal {
-                //             content: TokenContentType::Boolean(boolValue),
-                //         }) => boolValue,
-                //         _ => false,
-                //     }) {
-                //         break;
-                //     }
-                // }
+                return (retScope, retValue);
             },
             Ast::For(id, range, body) => {
                 assert!(range.len() == 2);
@@ -592,6 +685,7 @@ impl Interpreter {
                     })
                 ) {
                     for statement in elseBody {
+                        println!("calling execute from conditional");
                         Interpreter::execute(
                             statement,
                             retScope.clone(),
@@ -608,21 +702,49 @@ impl Interpreter {
                     );
                 }
             }
-            Ast::Set(caller, value, property) => {
+            Ast::Set(caller, _, value) => {
                 if !Interpreter::inScope(retScope.clone(), caller.clone()) {
                     panic!("Instance {} not found in scope", caller);
                 }
-            }
-            Ast::Get(_, _, _) => {
-                unimplemented!("Get not implemented yet");
+
+                let mut instance = retScope.borrow_mut().get(&caller).unwrap().clone();
+                if let Ast::Instance(name, mut members) = instance {
+                    let value = Interpreter::evaluate(
+                        value,
+                        retScope.clone(),
+                        retFunctionScope.clone(),
+                        retStructScope.clone(),
+                    );
+
+                    let propertyKey = match value.clone() {
+                        Ast::Literal(Literal {
+                            content: TokenContentType::String(s),
+                        }) => s,
+                        _ => panic!("Expected string as property, got {:?}", value),
+                    };
+
+                    if !members.contains_key(&propertyKey.to_string()) {
+                        panic!("Property {} not found in instance {}", propertyKey, name);
+                    }
+                    members.insert(propertyKey, value);
+                    retScope
+                        .borrow_mut()
+                        .insert(name.clone(), Ast::Instance(name, members));
+                    return (retScope, None);
+                } else {
+                    panic!("Expected instance but got {:?}", instance);
+                }
             }
 
             _ => {
-                Interpreter::evaluate(
-                    Box::new(node),
+                return (
                     retScope.clone(),
-                    retFunctionScope.clone(),
-                    retStructScope.clone(),
+                    Some(Interpreter::evaluate(
+                        Box::new(node),
+                        retScope.clone(),
+                        retFunctionScope.clone(),
+                        retStructScope.clone(),
+                    )),
                 );
             }
         }

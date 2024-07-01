@@ -6,6 +6,9 @@ mod stdlib;
 
 use std::{cell::RefCell, collections::HashMap, env, rc::Rc};
 
+use ast::Ast;
+use interpreter::Interpreter;
+
 // use interpreter::Interpreter;
 
 fn read_file(location: &str) -> String {
@@ -58,9 +61,41 @@ fn main() {
                     .as_str(),
                 );
             }
-
-            // Interpreter::run(ast, Rc::new(RefCell::new(HashMap::new())));
             // println!("{}", program);
+
+            let standardLibraryFunctions: Rc<
+                RefCell<HashMap<String, Box<dyn FnMut(Vec<Ast>) -> Ast>>>,
+            > = Rc::new(RefCell::new(HashMap::new()));
+
+            let scope = Rc::new(RefCell::new(HashMap::new()));
+            let structScope = Rc::new(RefCell::new(HashMap::new()));
+
+            let borrowedScope = Rc::clone(&scope);
+            let borrowedStandardLibraryFunctions = Rc::clone(&standardLibraryFunctions);
+            let borrowedStructScope = Rc::clone(&structScope);
+
+            standardLibraryFunctions.borrow_mut().insert(
+                "ink".to_string(),
+                Box::new(move |args: Vec<Ast>| {
+                    let scope = Rc::clone(&borrowedScope);
+                    let standardLibraryFunctions = Rc::clone(&borrowedStandardLibraryFunctions);
+                    let structScope = Rc::clone(&borrowedStructScope);
+                    for arg in args {
+                        println!(
+                            "{}",
+                            Interpreter::toPrint(
+                                arg,
+                                Rc::clone(&scope),
+                                Rc::clone(&standardLibraryFunctions),
+                                Rc::clone(&structScope)
+                            )
+                        );
+                    }
+                    Ast::None
+                }),
+            );
+
+            Interpreter::run(ast, scope, standardLibraryFunctions, structScope);
         }
         None => {
             // No file provided, go to REPL?

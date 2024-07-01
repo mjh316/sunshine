@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     collections::HashMap,
     ops::{Add, Div, Mul, Not, Rem, Sub},
