@@ -5,6 +5,12 @@ let a = 1
 let b = 1
 let name = "Justin"
 
+sketch seed {
+    print("loser")
+}
+
+seed()
+
 print(a)
 while (i < 10) {
     let tmp = b

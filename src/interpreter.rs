@@ -1,8 +1,4 @@
-use std::{
-    cell::{RefCell},
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{Array, Ast, Literal},
@@ -12,7 +8,7 @@ use crate::{
 pub struct Interpreter {}
 
 type Scope = Rc<RefCell<HashMap<String, Ast>>>;
-type FunctionScope = Rc<RefCell<HashMap<String, Box<dyn FnMut(Vec<Ast>) -> Ast>>>>;
+type FunctionScope = Rc<RefCell<HashMap<String, Box<dyn Fn(Vec<Ast>) -> Ast>>>>;
 type StructScope = Rc<RefCell<HashMap<String, HashMap<String, Ast>>>>; // this only stores the params each thing has, not the actual instances
                                                                        // those go in the scope
 
@@ -37,7 +33,7 @@ impl Interpreter {
                 }
                 if Interpreter::inScope(scope.clone(), name.clone()) {
                     return Interpreter::toPrint(
-                        scope.borrow_mut().get(&name).unwrap().clone(),
+                        scope.borrow().get(&name).unwrap().clone(),
                         scope.clone(),
                         functionScope.clone(),
                         structScope.clone(),
@@ -91,7 +87,7 @@ impl Interpreter {
                     functionScope.clone(),
                     structScope.clone(),
                 );
-                // println!("result: {:?}", result);
+                // // println!("result: {:?}", result);
                 return Interpreter::toPrint(
                     result,
                     scope.clone(),
@@ -114,7 +110,7 @@ impl Interpreter {
         let mut retScope = scope.clone();
         for node in ast {
             // println!("running node {:?}", node);
-            // println!("calling execute from run");
+            // // println!("calling execute from run");
             let (newScope, _ret) = Interpreter::execute(
                 node,
                 retScope.clone(),
@@ -145,7 +141,8 @@ impl Interpreter {
     }
 
     fn isFuncInScope(functionScope: FunctionScope, name: String) -> bool {
-        functionScope.borrow_mut().contains_key(&name)
+        let functionScope = functionScope.borrow();
+        functionScope.contains_key(&name)
     }
 
     fn isStructInScope(structScope: StructScope, name: String) -> bool {
@@ -158,17 +155,22 @@ impl Interpreter {
         functionScope: FunctionScope,
         structScope: StructScope,
     ) -> Ast {
-        // println!("evaluating {:?}", value);
+        // println!("evaluating boop {:?}", *value);
         match *value {
             Ast::Var(name, _) => {
+                // println!("found variable {}", name);
+                // println!("functionscope: {:#?}", functionScope.borrow_mut().keys());
+                let borrowed_scope = functionScope.borrow();
+                let iter = borrowed_scope.keys();
+                // println!("iter: {:#?}", iter);
                 if !Interpreter::inScope(scope.clone(), name.clone())
-                    && !Interpreter::isFuncInScope(functionScope.clone(), name.clone())
+                    && !iter.clone().any(|x| x == &name)
                 {
                     panic!("Variable {} not found in scope", name);
                 }
                 if Interpreter::inScope(scope.clone(), name.clone()) {
                     return scope.borrow_mut().get(&name).unwrap().clone();
-                } else if Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
+                } else if iter.clone().any(|x| x == &name) {
                     // println!("found function {}", name);
                     return Ast::Func(name, vec![], vec![]);
                 } else {
@@ -285,14 +287,14 @@ impl Interpreter {
                     structScope.clone(),
                 );
 
-                // println!("left: {:?}, op: {:?}, right: {:?}", left, op, right);
+                // // println!("left: {:?}, op: {:?}, right: {:?}", left, op, right);
 
                 if !operations.contains_key(&op) {
                     panic!("Unknown binary operator {:?}", op);
                 }
 
                 let resultOfOp = operations.get(&op).unwrap()(left, right);
-                // println!("result of op: {:?}", resultOfOp);
+                // // println!("result of op: {:?}", resultOfOp);
 
                 return resultOfOp;
             }
@@ -347,17 +349,19 @@ impl Interpreter {
                 );
 
                 // println!("function caller: {:?}", caller);
+                let functionScopeCopy = functionScope.clone();
 
                 match caller {
                     Ast::Func(name, _, _) => {
-                        if !Interpreter::isFuncInScope(functionScope.clone(), name.clone()) {
+                        // println!("function name: {:?}", name);
+                        if !Interpreter::isFuncInScope(functionScopeCopy.clone(), name.clone()) {
                             panic!("Function {} not found in scope", name);
                         } else {
-                            // println!("found function {}", name);
-                            let mut functionScopeMap = functionScope.borrow_mut();
+                            let mut functionScopeMap = functionScope.borrow();
                             let function = functionScopeMap
-                                .get_mut(&name)
+                                .get(&name)
                                 .expect(format!("Function {} not found in scope", name).as_str());
+                            // println!("found function YEET {}", name);
                             return function(args);
                         }
                     }
@@ -514,7 +518,9 @@ impl Interpreter {
                 let valueScope = Rc::clone(&retScope);
                 let structureScope = Rc::clone(&retStructScope);
                 let functionBody = body.clone();
+
                 let function = Box::new(move |args: Vec<Ast>| {
+                    // println!("function args: {:?}", args);
                     let localScope = valueScope.clone();
                     for (i, param) in params.iter().enumerate() {
                         localScope
@@ -524,12 +530,16 @@ impl Interpreter {
 
                     let functionScope = Rc::clone(&functionScope);
 
+                    // println!("function body: {:?}", functionBody.clone());
+
                     let result = Interpreter::run(
                         functionBody.clone(),
                         localScope,
-                        functionScope,
+                        functionScope.clone(),
                         structureScope.clone(),
                     );
+
+                    // println!("function result: {:?}", result);
 
                     match result.1 {
                         Some(value) => value,
@@ -550,10 +560,10 @@ impl Interpreter {
                 return (retScope, retValue);
             }
             Ast::While(condition, body) => loop {
-                // println!("STARTING WHILE LOOP!");
+                // // println!("STARTING WHILE LOOP!");
                 loop {
-                    // println!("condition {:?}", condition);
-                    // println!("calling execute from while loop");
+                    // // println!("condition {:?}", condition);
+                    // // println!("calling execute from while loop");
                     if !matches!(
                         Interpreter::evaluate(
                             condition.clone(),
@@ -565,18 +575,18 @@ impl Interpreter {
                             content: TokenContentType::Boolean(true)
                         })
                     ) {
-                        // println!("BREAKING WHILE LOOP!");
+                        // // println!("BREAKING WHILE LOOP!");
                         break;
                     }
 
-                    // println!("{:?}", format!("condition {:?}", condition));
+                    // // println!("{:?}", format!("condition {:?}", condition));
                     let result = Interpreter::execute(
                         *condition.clone(),
                         retScope.clone(),
                         retFunctionScope.clone(),
                         retStructScope.clone(),
                     );
-                    // println!("result in while {:?}", result);
+                    // // println!("result in while {:?}", result);
                     let condition = result.1.unwrap();
                     match condition {
                         Ast::Literal(Literal {
@@ -698,7 +708,7 @@ impl Interpreter {
                     })
                 ) {
                     for statement in elseBody {
-                        println!("calling execute from conditional");
+                        // println!("calling execute from conditional");
                         Interpreter::execute(
                             statement,
                             retScope.clone(),

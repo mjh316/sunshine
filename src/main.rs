@@ -68,7 +68,7 @@ fn main() {
             // println!("{}", program);
 
             let standardLibraryFunctions: Rc<
-                RefCell<HashMap<String, Box<dyn FnMut(Vec<Ast>) -> Ast>>>,
+                RefCell<HashMap<String, Box<dyn Fn(Vec<Ast>) -> Ast>>>,
             > = Rc::new(RefCell::new(HashMap::new()));
 
             let scope = Rc::new(RefCell::new(HashMap::new()));
