@@ -4,7 +4,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 fn KEYWORDS() -> HashSet<&'static str> {
     HashSet::from([
-        "prepare", "as", "brush", "prep", "has", "sketch", "needs", "finished", "loop", "through",
+        "let", "=", "brush", "prep", "has", "sketch", "needs", "finished", "loop", "through",
         "while", "if", "elif", "else",
     ])
 }
@@ -456,6 +456,14 @@ impl Lexer {
                         self.line,
                         self.column,
                     ));
+                } else {
+                    self.tokens.push(Token::new(
+                        TokenType::Keyword,
+                        String::from("="),
+                        String::from("=").into(),
+                        self.line,
+                        self.column,
+                    ));
                 }
             }
             '&' => {
@@ -538,6 +546,8 @@ impl Lexer {
                     } else {
                         TokenType::Identifier
                     };
+
+                    println!("Identifier: {}", identifier);
                     self.tokens.push(Token::new(
                         _type,
                         identifier.clone(),

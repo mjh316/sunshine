@@ -1,17 +1,17 @@
-prepare i as 0
-prepare sum as 0
+let i = 0
+let sum = 0
 
-prepare a as 1
-prepare b as 1
-prepare name as "Justin"
+let a = 1
+let b = 1
+let name = "Justin"
 
 ink(a)
 while (i < 40) {
-    prepare tmp as b
-    prepare b as a + b
-    prepare a as tmp
+    let tmp = b
+    let b = a + b
+    let a = tmp
     ink(name * 2)
-    prepare i as i + 1
+    let i = i + 1
 }
 
 ~ink(sum)

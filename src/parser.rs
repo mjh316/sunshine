@@ -409,18 +409,18 @@ impl Parser {
     }
 
     fn assignStmt(&mut self) -> Ast {
-        self.eatKeyword("prepare");
+        self.eatKeyword("let");
         let name = self.eat(TokenType::Identifier).value;
 
         if matches!(self.peekType().unwrap(), TokenType::Period) {
             self.eat(TokenType::Period);
             let property = self.eat(TokenType::Identifier).value;
-            self.eatKeyword("as");
+            self.eatKeyword("=");
             let value = self.expr();
             return Ast::Set(name, property, Box::new(value.clone()));
         }
 
-        self.eatKeyword("as");
+        self.eatKeyword("=");
         let value = self.expr();
         Ast::Var(name, Some(Box::new(value)))
     }
@@ -458,7 +458,7 @@ impl Parser {
                     "if" => {
                         return self.conditionalStmt("if");
                     }
-                    "prepare" => {
+                    "let" => {
                         return self.assignStmt();
                     }
                     "brush" => {
