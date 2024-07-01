@@ -93,7 +93,7 @@ impl Interpreter {
                     functionScope.clone(),
                     structScope.clone(),
                 );
-                println!("result: {:?}", result);
+                // println!("result: {:?}", result);
                 return Interpreter::toPrint(
                     result,
                     scope.clone(),

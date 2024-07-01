@@ -10,7 +10,7 @@ while (i < 40) {
     prepare tmp as b
     prepare b as a + b
     prepare a as tmp
-    ink(name + " Hello ")
+    ink(name * 2)
     prepare i as i + 1
 }
 
