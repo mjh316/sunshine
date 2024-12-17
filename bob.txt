@@ -4,6 +4,8 @@ let cell = prep Cell(x: 2, y: 3)
 
 print(cell)
 
+print(2)
+
 let arr = [2, 3, 1, 4, 9, 3]
 arr.sort()
 ~arr.reverse()
